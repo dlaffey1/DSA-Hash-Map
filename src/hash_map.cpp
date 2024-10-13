@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_map.h"
+#include <iostream>
 
 // Hash function to map a string to an index
 unsigned int hash(const char *key) {
@@ -19,13 +20,16 @@ void initHashMap(HashMap *map) {
 void insert(HashMap *map, const char *word, WordEntry entry) {
     unsigned int index = hash(word);
     HashMapNode *node = map->table[index];
+        // Debug: Print the word being inserted
+    std::cout << "Inserting word: " << word << ", Document ID: " << entry.docID 
+              << ", Position: " << entry.position << ", File Name: " << entry.fileName << std::endl;
 
     // Check if the key already exists
     while (node != NULL) {
         if (strcmp(node->key, word) == 0) {
             // Key exists, add the entry
             node->entries = (WordEntry*) realloc(node->entries, sizeof(WordEntry) * (node->count + 1));
-            node->entries[node->count] = entry;
+            node->entries[node->count] = entry;  // No need for conversion here
             node->count++;
             return;
         }
@@ -34,13 +38,14 @@ void insert(HashMap *map, const char *word, WordEntry entry) {
 
     // Key does not exist, create a new node
     node = (HashMapNode*) malloc(sizeof(HashMapNode));
-    node->key = strdup(word); // This can stay as is, since strdup is okay in C++
-    node->entries = (WordEntry*) malloc(sizeof(WordEntry)); // Allocate space for entries
-    node->entries[0] = entry;
+    node->key = strdup(word);  // Duplicate the key string
+    node->entries = (WordEntry*) malloc(sizeof(WordEntry));  // Allocate space for entries
+    node->entries[0] = entry;  // Assign the first entry
     node->count = 1;
     node->next = map->table[index];
     map->table[index] = node;
 }
+
 
 // hash_map.cpp
 void searchWord(HashMap *map, const char *word) {
