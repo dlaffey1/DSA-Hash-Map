@@ -24,11 +24,6 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
                     // Create a new WordEntry
                     WordEntry wordEntry = { docID, position, fileName };
 
-                    // Debug: Print the WordEntry details
-                    std::cout << "Inserting word: " << word 
-                              << ", Document ID: " << wordEntry.docID 
-                              << ", Position: " << wordEntry.position 
-                              << ", File Name: " << wordEntry.fileName << std::endl;
 
                     insert(index, word.c_str(), wordEntry);
                     insertTrie(autocompleteTrie, word.c_str());

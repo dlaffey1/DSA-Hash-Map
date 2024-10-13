@@ -1,8 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "hash_map.h"
 #include <iostream>
+#include <cstring>
+#include "hash_map.h"
 
 // Hash function to map a string to an index
 unsigned int hash(const char *key) {
@@ -20,54 +18,60 @@ void initHashMap(HashMap *map) {
 void insert(HashMap *map, const char *word, WordEntry entry) {
     unsigned int index = hash(word);
     HashMapNode *node = map->table[index];
-        // Debug: Print the word being inserted
-    std::cout << "Inserting word: " << word << ", Document ID: " << entry.docID 
-              << ", Position: " << entry.position << ", File Name: " << entry.fileName << std::endl;
+
+    // Debug: Print the index where we're inserting
+    std::cout << "Inserting at index: " << index << " for word: " << word << std::endl;
 
     // Check if the key already exists
     while (node != NULL) {
-        if (strcmp(node->key, word) == 0) {
+        if (node->key == word) {
             // Key exists, add the entry
-            node->entries = (WordEntry*) realloc(node->entries, sizeof(WordEntry) * (node->count + 1));
-            node->entries[node->count] = entry;  // No need for conversion here
-            node->count++;
+            std::cout << "Key already exists, current count: " << node->entries.size() << std::endl;
+
+            // Debug: Print existing entries before reallocating
+            std::cout << "Existing entries before reallocating:" << std::endl;
+            for (const auto& existingEntry : node->entries) {
+                std::cout << "Entry: Document ID: " << existingEntry.docID 
+                          << ", Position: " << existingEntry.position 
+                          << ", File Name: " << existingEntry.fileName << std::endl;
+            }
+
+            node->entries.push_back(entry); // Use vector's push_back
+            std::cout << "Inserted entry for existing key, new count: " << node->entries.size() << std::endl;
             return;
         }
         node = node->next;
     }
 
     // Key does not exist, create a new node
-    node = (HashMapNode*) malloc(sizeof(HashMapNode));
-    node->key = strdup(word);  // Duplicate the key string
-    node->entries = (WordEntry*) malloc(sizeof(WordEntry));  // Allocate space for entries
-    node->entries[0] = entry;  // Assign the first entry
-    node->count = 1;
+    node = new HashMapNode; // Use new for dynamic allocation
+    node->key = word; // Direct assignment since key is std::string
+    node->entries.push_back(entry);  // Assign the first entry
     node->next = map->table[index];
     map->table[index] = node;
+
+    // Debug: Print out the initial state of the new node
+    std::cout << "Inserted new node with word: " << node->key << ", count: " << node->entries.size() << std::endl;
 }
 
-
-// hash_map.cpp
 void searchWord(HashMap *map, const char *word) {
     unsigned int index = hash(word);
     HashMapNode *node = map->table[index];
 
     while (node != NULL) {
-        if (strcmp(node->key, word) == 0) {
-            printf("Found in documents:\n");
-            for (int i = 0; i < node->count; i++) {
-                printf("Doxcvxcvcument ID: %d, Position: %d, File Name: %s\n",
-                       node->entries[i].docID, 
-                       node->entries[i].position, 
-                       node->entries[i].fileName.c_str()); // Use c_str() here
+        if (node->key == word) {
+            std::cout << "Found in documents:\n";
+            for (const auto& entry : node->entries) {
+                std::cout << "Document ID: " << entry.docID 
+                          << ", Position: " << entry.position 
+                          << ", File Name: " << entry.fileName << std::endl;
             }
             return;
         }
         node = node->next;
     }
-    printf("Word not found!\n");
+    std::cout << "Word not found!" << std::endl;
 }
-
 
 void freeHashMap(HashMap *map) {
     for (int i = 0; i < HASH_MAP_SIZE; i++) {
@@ -75,9 +79,7 @@ void freeHashMap(HashMap *map) {
         while (node != NULL) {
             HashMapNode *temp = node;
             node = node->next;
-            free(temp->key);
-            free(temp->entries);
-            free(temp);
+            delete temp; // Use delete to free nodes
         }
     }
 }

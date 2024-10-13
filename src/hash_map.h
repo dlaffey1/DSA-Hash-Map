@@ -2,25 +2,25 @@
 #define HASH_MAP_H
 
 #include <string>
+#include <vector>
 
 #define HASH_MAP_SIZE 100
 
-typedef struct {
+struct WordEntry {
     int docID;
     int position;
-    std::string fileName;  // Add this field to store the file name
-} WordEntry;
+    std::string fileName;  // Use std::string for safety
+};
 
-typedef struct HashMapNode {
-    char *key;
-    WordEntry *entries;
-    int count;
-    struct HashMapNode *next;
-} HashMapNode;
+struct HashMapNode {
+    std::string key;         // Use std::string for keys
+    std::vector<WordEntry> entries; // Use vector to manage entries
+    HashMapNode *next;
+};
 
-typedef struct {
+struct HashMap {
     HashMapNode *table[HASH_MAP_SIZE];
-} HashMap;
+};
 
 void initHashMap(HashMap *map);
 void insert(HashMap *map, const char *word, WordEntry entry);
