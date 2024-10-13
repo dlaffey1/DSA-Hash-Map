@@ -8,7 +8,7 @@
 typedef struct {
     int docID;
     int position;
-    std::string fileName;;  // Add this field to store the file name
+    std::string fileName;  // Add this field to store the file name
 } WordEntry;
 
 typedef struct HashMapNode {

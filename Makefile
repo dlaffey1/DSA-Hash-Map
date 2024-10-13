@@ -1,16 +1,21 @@
-CC = gcc
-CFLAGS = -Wall -g
-SOURCES = src/main.c src/hash_map.c src/trie.c src/utils.c
-OBJECTS = $(SOURCES:.c=.o)
+CC = g++
+CFLAGS = -std=c++17
+
+# Source files
+SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+# Executable name
 EXECUTABLE = MiniSearchEngine
 
-all: $(EXECUTABLE)
-
+# Rule for building the executable
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(OBJECTS) -o $(EXECUTABLE)
 
-%.o: %.c
+# Rule for compiling object files
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Clean rule
 clean:
 	rm -f $(OBJECTS) $(EXECUTABLE)
