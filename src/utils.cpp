@@ -1,43 +1,40 @@
-#include <stdio.h>
-#include <dirent.h>
-#include <string.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <filesystem> // For directory handling
 #include "hash_map.h"
 #include "trie.h"
 
-// Function to index books and add them to the hash map and trie
-void indexBooks(HashMap *index, Trie *autocompleteTrie, const char *dataDir) {
-    DIR *dir;
-    struct dirent *entry;
+namespace fs = std::filesystem;
 
-    // Open the directory containing the book files
-    if ((dir = opendir(dataDir)) == NULL) {
-        perror("opendir");
-        return;
-    }
+void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &directoryPath) {
+    int docID = 1;  // Start with document ID 1
 
-    // Iterate through the files in the directory
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_REG) { // Only process regular files
-            char filePath[512]; // Increase buffer size
-            snprintf(filePath, sizeof(filePath), "%s/%s", dataDir, entry->d_name);
-            FILE *file = fopen(filePath, "r");
-            if (file) {
-                char word[100];
+    // Iterate through the files in the directory using C++17's filesystem
+    for (const auto &entry : fs::directory_iterator(directoryPath)) {
+        if (entry.is_regular_file()) {
+            std::ifstream file(entry.path());
+            if (file.is_open()) {
+                std::string word;
                 int position = 0;
 
+                std::string fileName = entry.path().filename().string(); // Get the file name for debug
+                std::cout << "Indexing file: " << fileName << " (Document ID: " << docID << ")" << std::endl;  // Debug info
+
                 // Read each word from the file
-                while (fscanf(file, "%s", word) == 1) {
-                    // Create a new WordEntry for the current word
-                    WordEntry entry = { .docID = 1, .position = position }; // You can update docID based on the file number
-                    insert(index, word, entry);
-                    insertTrie(autocompleteTrie, word);
+                while (file >> word) {
+                    // Create a new WordEntry for the current word, now with the file name
+                    WordEntry wordEntry = { docID, position, fileName }; // Directly use std::string
+                    insert(index, word.c_str(), wordEntry); // Pass C-string version of word
+                    insertTrie(autocompleteTrie, word.c_str()); // Pass C-string version of word
                     position++;
                 }
-                fclose(file);
+                file.close();
             } else {
-                perror("fopen");
+                std::cerr << "Error opening file: " << entry.path() << std::endl;
             }
+            docID++;  // Increment docID for each file
         }
     }
-    closedir(dir);
 }

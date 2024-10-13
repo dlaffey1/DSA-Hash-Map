@@ -1,35 +1,30 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "trie.h"
-
-void initTrie(Trie *trie) {
-    trie->root = malloc(sizeof(TrieNode));
-    for (int i = 0; i < ALPHABET_SIZE; i++) {
-        trie->root->children[i] = NULL;
-    }
-    trie->root->isEndOfWord = false;
+#include <stdio.h>
+int charToIndex(char c) {
+    return c - 'a';  // Adjust this logic based on your character set (e.g., lowercase a-z)
 }
 
-int charToIndex(char ch) {
-    return ch - 'a'; // Assuming only lowercase letters
+
+void initTrie(Trie *trie) {
+    trie->root = (TrieNode*) malloc(sizeof(TrieNode)); // Cast to TrieNode*
+    memset(trie->root, 0, sizeof(TrieNode));
 }
 
 void insertTrie(Trie *trie, const char *word) {
     TrieNode *node = trie->root;
-    for (int level = 0; word[level]; level++) {
-        int index = charToIndex(word[level]);
+    for (const char *p = word; *p; p++) {
+        int index = *p - 'a'; // Assuming lowercase letters
         if (!node->children[index]) {
-            node->children[index] = malloc(sizeof(TrieNode));
-            for (int i = 0; i < ALPHABET_SIZE; i++) {
-                node->children[index]->children[i] = NULL;
-            }
-            node->children[index]->isEndOfWord = false;
+            node->children[index] = (TrieNode*) malloc(sizeof(TrieNode)); // Cast to TrieNode*
+            memset(node->children[index], 0, sizeof(TrieNode));
         }
         node = node->children[index];
     }
-    node->isEndOfWord = true;
+    node->isEndOfWord = 1;
 }
+
 
 void searchSuggestions(TrieNode *node, char *prefix, int level) {
     if (node->isEndOfWord) {

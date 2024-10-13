@@ -1,19 +1,20 @@
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
-#include <stdbool.h>
+#include <string>
 
-#define HASH_MAP_SIZE 1000
+#define HASH_MAP_SIZE 100
 
 typedef struct {
     int docID;
     int position;
+    std::string fileName;;  // Add this field to store the file name
 } WordEntry;
 
 typedef struct HashMapNode {
     char *key;
-    WordEntry *entries; // Array of WordEntry
-    int count; // Number of entries
+    WordEntry *entries;
+    int count;
     struct HashMapNode *next;
 } HashMapNode;
 
@@ -26,4 +27,4 @@ void insert(HashMap *map, const char *word, WordEntry entry);
 void searchWord(HashMap *map, const char *word);
 void freeHashMap(HashMap *map);
 
-#endif // HASH_MAP_H
+#endif
