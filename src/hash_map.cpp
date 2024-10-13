@@ -24,7 +24,7 @@ void insert(HashMap *map, const char *word, WordEntry entry) {
     while (node != NULL) {
         if (strcmp(node->key, word) == 0) {
             // Key exists, add the entry
-            node->entries = realloc(node->entries, sizeof(WordEntry) * (node->count + 1));
+            node->entries = (WordEntry*) realloc(node->entries, sizeof(WordEntry) * (node->count + 1));
             node->entries[node->count] = entry;
             node->count++;
             return;
@@ -33,15 +33,16 @@ void insert(HashMap *map, const char *word, WordEntry entry) {
     }
 
     // Key does not exist, create a new node
-    node = malloc(sizeof(HashMapNode));
-    node->key = strdup(word);
-    node->entries = malloc(sizeof(WordEntry));
+    node = (HashMapNode*) malloc(sizeof(HashMapNode));
+    node->key = strdup(word); // This can stay as is, since strdup is okay in C++
+    node->entries = (WordEntry*) malloc(sizeof(WordEntry)); // Allocate space for entries
     node->entries[0] = entry;
     node->count = 1;
     node->next = map->table[index];
     map->table[index] = node;
 }
 
+// hash_map.cpp
 void searchWord(HashMap *map, const char *word) {
     unsigned int index = hash(word);
     HashMapNode *node = map->table[index];
@@ -50,7 +51,10 @@ void searchWord(HashMap *map, const char *word) {
         if (strcmp(node->key, word) == 0) {
             printf("Found in documents:\n");
             for (int i = 0; i < node->count; i++) {
-                printf("Document ID: %d, Position: %d\n", node->entries[i].docID, node->entries[i].position);
+                printf("Doxcvxcvcument ID: %d, Position: %d, File Name: %s\n",
+                       node->entries[i].docID, 
+                       node->entries[i].position, 
+                       node->entries[i].fileName.c_str()); // Use c_str() here
             }
             return;
         }
@@ -58,6 +62,7 @@ void searchWord(HashMap *map, const char *word) {
     }
     printf("Word not found!\n");
 }
+
 
 void freeHashMap(HashMap *map) {
     for (int i = 0; i < HASH_MAP_SIZE; i++) {
