@@ -51,6 +51,10 @@ public:
     void insert(int index, T element);
     void erase(int index);
     void clear();
+    T* begin();
+    T* end();
+    const T* begin() const;
+    const T* end() const;
 
 private:
     int size;
@@ -263,6 +267,25 @@ void Vector<T>::resize()
 
     delete[] array;
     array = temp;
+}
+template <typename T>
+T* Vector<T>::begin() {
+    return array;  // Points to the first element of the array
+}
+
+template <typename T>
+T* Vector<T>::end() {
+    return array + size;  // Points one past the last element
+}
+
+template <typename T>
+const T* Vector<T>::begin() const {
+    return array;
+}
+
+template <typename T>
+const T* Vector<T>::end() const {
+    return array + size;
 }
 
 #endif

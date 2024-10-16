@@ -2,7 +2,8 @@
 #define TRIE_H
 
 #include <stdbool.h>
-
+#include <string>
+#include "vector.h"
 #define ALPHABET_SIZE 26
 
 typedef struct TrieNode {
@@ -18,5 +19,7 @@ void initTrie(Trie *trie);
 void insertTrie(Trie *trie, const char *word);
 void autocomplete(Trie *trie, const char *prefix);
 void freeTrie(Trie *trie);
+void findWords(TrieNode* node, std::string &currentWord, Vector<std::string>& results);
+
 
 #endif // TRIE_H
