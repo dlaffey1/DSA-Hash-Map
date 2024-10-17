@@ -1,4 +1,5 @@
 #include "Vector.h"
+#include "hash_map.h"
 
 // Constructor
 template <typename T>
@@ -102,7 +103,7 @@ Vector<T> &Vector<T>::operator=(const Vector &v)
     {
         delete[] array;
         capacity = v.size + 5;
-        array = new int[capacity];
+        array = new T[capacity];  // Allocate new array of the correct type
     }
     for (int i = 0; i < v.size; ++i)
     {
@@ -141,8 +142,8 @@ T &Vector<T>::At(int index)
         throw std::out_of_range("Index out of bounds!");
     }
 
-    // std::cout << "Returning element at index: " << index << std::endl;
-    // std::cout << "Element: " << array[index] << std::endl;
+    std::cout << "Returning element at index: " << index << std::endl;
+    std::cout << "Element: " << array[index] << std::endl;
     return array[index];
 }
 
@@ -297,3 +298,6 @@ const T* Vector<T>::end() const {
 
 }
 
+
+template class Vector<std::string>;
+template class Vector<WordEntry>;

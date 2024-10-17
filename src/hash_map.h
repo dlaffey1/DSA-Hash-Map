@@ -6,6 +6,7 @@
 
 #define HASH_MAP_SIZE 100
 
+
 struct WordEntry {
     int docID;
     int position;
@@ -13,7 +14,31 @@ struct WordEntry {
     float tf;   // Term Frequency
     float idf;  // Inverse Document Frequency
     float tfidf; // TF-IDF
+
+    // Define the operator!=
+    bool operator!=(const WordEntry &other) const {
+        return docID != other.docID ||
+               position != other.position ||
+               fileName != other.fileName ||
+               tf != other.tf ||
+               idf != other.idf ||
+               tfidf != other.tfidf;
+    }
 };
+
+// Define operator<< for output
+inline std::ostream& operator<<(std::ostream& os, const WordEntry& entry) {
+    os << "WordEntry{"
+       << " docID: " << entry.docID
+       << ", position: " << entry.position
+       << ", fileName: \"" << entry.fileName << "\""
+       << ", tf: " << entry.tf
+       << ", idf: " << entry.idf
+       << ", tfidf: " << entry.tfidf
+       << " }";
+    return os;
+}
+
 
 
 struct HashMapNode {

@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -std=c++17
 
 # Source files
-SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp
+SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp src/Vector.cpp
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)
 # Executable name
