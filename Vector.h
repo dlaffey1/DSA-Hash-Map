@@ -44,26 +44,15 @@ public:
         return os;
     }
 
-    // friend std::ostream &operator<<(std::ostream &os, const Vector<T> &v)
-    // {
-    //     os << "[ ";
-    //     for (int i = 0; i < v.getSize(); i++)
-    //     {
-    //         os << v.array[i];
-    //         if (i < v.getSize() - 1)
-    //         {
-    //             os << ", ";
-    //         }
-    //     }
-    //     os << " ]";
-    //     return os;
-    // }
-
     Vector &operator=(const Vector &v);
     T &operator[](int index);
+    const T &operator[](int index) const;
     T &At(int index);
+    const T &At(int index) const;
     T &Front();
+    const T &Front() const;
     T &Back();
+    const T &Back() const;
 
     void insert(int index, T element);
     void erase(int index);

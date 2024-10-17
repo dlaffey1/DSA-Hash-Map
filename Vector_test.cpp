@@ -1,3 +1,5 @@
+// Comparing two floats and doubles while accounting for precision loss: https://stackoverflow.com/questions/17333/how-do-you-compare-float-and-double-while-accounting-for-precision-loss
+
 #include <iostream>
 #include <stdexcept>
 #include <cassert>
@@ -19,21 +21,9 @@ int main()
     test_pop_back();
     test_insert();
     test_erase();
-    // test_accessing_elems();
-    // test_clear();
-    // test_exceptions();
-
-    // Vector<int> v;
-    // v.push_back(1);
-    // v.push_back(2);
-    // v.push_back(3);
-    // v.push_back(4);
-    // v.push_back(5);
-    // v.push_back(6);
-    // std::cout << v.getSize() << std::endl;
-    // v.pop_back();
-    // v.pop_back();
-    // std::cout << v.getSize() << std::endl;
+    test_accessing_elems();
+    test_clear();
+    test_exceptions();
 
     std::cout << "All tests passed!" << std::endl;
     return 0;
@@ -106,26 +96,21 @@ void test_erase()
 {
     Vector<float> v;
     v.push_back(1.1);
-    std::cout << v << std::endl;
     v.push_back(2.2);
-    std::cout << v << std::endl;
     v.push_back(3.3);
-    std::cout << v << std::endl;
     v.push_back(4.4);
-    std::cout << v << std::endl;
     v.pop_back();
-    std::cout << v << std::endl;
     v.push_back(5.5);
-    std::cout << v << std::endl;
 
     assert(v.getSize() == 4);
-    std::cout << v[2] << std::endl;
-    std::cout << v << std::endl;
-    assert(v.At(2) == 3.3);
+    float epsilon = 1e-6;
+    assert(std::abs(v.At(2) - 3.3) < epsilon);
 
-    // v.erase(0);
-    // assert(v.getSize() == 2);
-    // assert(v[0] == 2.2);
+    v.erase(0);
+    assert(v.getSize() == 3);
+    assert(std::abs(v[0] - 2.2) < epsilon);
+
+    std::cout << "test_erase(): PASSED" << std::endl;
 }
 
 // Test accessing elements using the At() method
@@ -140,8 +125,11 @@ void test_accessing_elems()
     assert(v.At(2) == 3.33);
     assert(v.Front() == 1.11);
     assert(v.Back() == 3.33);
-    v[30] = 0.746;
-    assert(v[30] == 0.746);
+    v.push_back(4.44);
+    v.insert(4, 0.746);
+    assert(v[4] == 0.746);
+
+    std::cout << "test_accessing_elems(): PASSED" << std::endl;
 }
 
 // Test clearing the vector
@@ -157,6 +145,8 @@ void test_clear()
     assert(v.empty() == true);
     assert(v.getSize() == 0);
     assert(v.getCapacity() > 0);
+
+    std::cout << "test_clear(): PASSED" << std::endl;
 }
 
 // Test exceptions
@@ -207,4 +197,6 @@ void test_exceptions()
     {
         assert(std::string(e.what()) == "Pop back on empty vector!");
     }
+
+    std::cout << "test_exceptions(): PASSED" << std::endl;
 }

@@ -116,24 +116,58 @@ Vector<T> &Vector<T>::operator=(const Vector &v)
 template <typename T>
 T &Vector<T>::operator[](int index)
 {
+    if (index < 0 || size <= index)
+    {
+        throw std::out_of_range("Index out of bounds!");
+    }
+    return array[index];
+}
+
+template <typename T>
+const T &Vector<T>::operator[](int index) const
+{
+    if (index < 0 || size <= index)
+    {
+        throw std::out_of_range("Index out of bounds!");
+    }
     return array[index];
 }
 
 template <typename T>
 T &Vector<T>::At(int index)
 {
-    if (index < 0 || index >= size)
+    if (index < 0 || size <= index)
     {
         throw std::out_of_range("Index out of bounds!");
     }
 
-    std::cout << "Returning element at index: " << index << std::endl;
-    std::cout << "Element: " << array[index] << std::endl;
+    // std::cout << "Returning element at index: " << index << std::endl;
+    // std::cout << "Element: " << array[index] << std::endl;
+    return array[index];
+}
+
+template <typename T>
+const T &Vector<T>::At(int index) const
+{
+    if (index < 0 || size <= index)
+    {
+        throw std::out_of_range("Index out of bounds!");
+    }
     return array[index];
 }
 
 template <typename T>
 T &Vector<T>::Front()
+{
+    if (size == 0)
+    {
+        throw std::out_of_range("Vector is empty!");
+    }
+    return array[0];
+}
+
+template <typename T>
+const T &Vector<T>::Front() const
 {
     if (size == 0)
     {
@@ -153,6 +187,16 @@ T &Vector<T>::Back()
 }
 
 template <typename T>
+const T &Vector<T>::Back() const
+{
+    if (size == 0)
+    {
+        throw std::out_of_range("Vector is empty!");
+    }
+    return array[size - 1];
+}
+
+template <typename T>
 void Vector<T>::insert(int index, T element)
 {
     // std::cout << "Inserting element: " << element << " at index: " << index << std::endl;
@@ -161,20 +205,16 @@ void Vector<T>::insert(int index, T element)
         throw std::out_of_range("Index out of bounds!");
     }
 
-    if (size != capacity)
-    {
-        for (int i = size - 1; i >= index; --i)
-        {
-            array[i + 1] = array[i];
-        }
-        array[index] = element;
-        ++size;
-    }
-    else
+    if (size == capacity)
     {
         resize();
-        insert(index, element);
     }
+    for (int i = size - 1; i > index; --i)
+    {
+        array[i] = array[i - 1];
+    }
+    array[index] = element;
+    ++size;
 }
 
 template <typename T>
@@ -203,12 +243,17 @@ template <typename T>
 void Vector<T>::resize()
 {
     int new_capacity = capacity == 0 ? 1 : capacity * 2;
-    T* temp = new T[new_capacity]();
+    T* temp = new T[new_capacity];
     for (int i = 0; i < size; ++i)
     {
         temp[i] = array[i];
     }
+    for (int i = size; i < new_capacity; ++i)
+    {
+        temp[i] = T();
+    }
 
     delete[] array;
     array = temp;
+    capacity = new_capacity;
 }
