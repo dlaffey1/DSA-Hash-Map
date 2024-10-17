@@ -57,7 +57,10 @@ public:
     void insert(int index, T element);
     void erase(int index);
     void clear();
-
+    T* begin();
+    T* end();
+    const T* begin() const;
+    const T* end() const;
 private:
     int size;
     int capacity;

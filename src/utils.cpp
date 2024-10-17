@@ -3,7 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <map>
-#include <vector>
+#include "Vector.h"
 #include <string>
 #include "hash_map.h"
 #include "trie.h"

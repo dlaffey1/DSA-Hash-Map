@@ -2,7 +2,7 @@
 #include <string.h>
 #include "trie.h"
 #include <stdio.h>
-#include "vector.h"
+#include "Vector.h"
 int charToIndex(char c) {
     return c - 'a';  // Adjust this logic based on your character set (e.g., lowercase a-z)
 }

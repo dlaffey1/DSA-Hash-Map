@@ -2,7 +2,7 @@
 #define HASH_MAP_H
 
 #include <string>
-#include "vector.h" 
+#include "Vector.h" 
 
 #define HASH_MAP_SIZE 100
 

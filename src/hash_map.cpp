@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include "hash_map.h"
-#include "vector.h"  // Include your custom Vector class
+#include "Vector.h"  // Include your custom Vector class
 #include <iostream>
 #include <algorithm>
 

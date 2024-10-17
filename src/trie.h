@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <string>
-#include "vector.h"
+#include "Vector.h"
 #define ALPHABET_SIZE 26
 
 typedef struct TrieNode {

@@ -199,7 +199,7 @@ const T &Vector<T>::Back() const
 template <typename T>
 void Vector<T>::insert(int index, T element)
 {
-    // std::cout << "Inserting element: " << element << " at index: " << index << std::endl;
+    std::cout << "Inserting element: " << element << " at index: " << index << std::endl;
     if (index < 0 || index > size)
     {
         throw std::out_of_range("Index out of bounds!");
@@ -257,3 +257,43 @@ void Vector<T>::resize()
     array = temp;
     capacity = new_capacity;
 }
+
+
+template <typename T>
+
+T* Vector<T>::begin() {
+
+    return array;  // Points to the first element of the array
+
+}
+
+
+
+template <typename T>
+
+T* Vector<T>::end() {
+
+    return array + size;  // Points one past the last element
+
+}
+
+
+
+template <typename T>
+
+const T* Vector<T>::begin() const {
+
+    return array;
+
+}
+
+
+
+template <typename T>
+
+const T* Vector<T>::end() const {
+
+    return array + size;
+
+}
+
