@@ -9,7 +9,6 @@
 #include "trie.h"
 #include <cmath>
 
-
 namespace fs = std::filesystem;
 
 void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &directory) {
@@ -20,8 +19,10 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
 
     for (const auto &entry : fs::directory_iterator(directory)) {
         if (entry.is_regular_file()) {
+            std::cout << "Attempting to open file: " << entry.path() << std::endl;  // Debug: File opening attempt
             std::ifstream file(entry.path());
             if (file.is_open()) {
+                std::cout << "Successfully opened file: " << entry.path() << std::endl;  // Debug: File opened successfully
                 std::string word;
                 int position = 0;
                 std::string fileName = entry.path().filename().string(); // Get the filename
@@ -37,12 +38,19 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
                     
                     // Create a new WordEntry
                     WordEntry wordEntry = { docID, position, fileName };
+                    std::cout << "Creating WordEntry for word: " << word 
+                              << " with Document ID: " << docID 
+                              << ", Position: " << position 
+                              << ", File Name: " << fileName << std::endl;  // Debug: WordEntry creation
 
                     // Insert into the hash map
                     if (!insert(index, word.c_str(), wordEntry)) {
                         std::cerr << "Error inserting into hash map for word: " << word << std::endl;
+                    } else {
+                        std::cout << "Inserted into hash map: " << word << std::endl;  // Debug: Insertion success
                     }
                     insertTrie(autocompleteTrie, word.c_str());
+                    std::cout << "Inserted into Trie: " << word << std::endl;  // Debug: Trie insertion
 
                     position++;
                 }
@@ -54,6 +62,7 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
                 }
 
                 file.close();
+                std::cout << "Completed indexing file: " << fileName << std::endl;  // Debug: File indexing complete
                 totalDocs++;
             } else {
                 std::cerr << "Error opening file: " << entry.path() << std::endl;
@@ -79,5 +88,3 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
         }
     }
 }
-
-

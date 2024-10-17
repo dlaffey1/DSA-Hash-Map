@@ -2,7 +2,6 @@
 #include <cstring>
 #include "hash_map.h"
 #include "Vector.h"  // Include your custom Vector class
-#include <iostream>
 #include <algorithm>
 
 // Hash function to map a string to an index
@@ -13,7 +12,6 @@ unsigned int hash(const std::string &key) {
     }
     return hash % HASH_MAP_SIZE;
 }
-
 
 void initHashMap(HashMap *map) {
     memset(map->table, 0, sizeof(map->table));
@@ -35,6 +33,11 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
 
     // Key does not exist; create a new node
     HashMapNode *newNode = new HashMapNode;
+    if (!newNode) {
+        std::cerr << "Failed to allocate memory for HashMapNode." << std::endl;
+        return false; // Handle memory allocation failure
+    }
+
     newNode->key = key;
     newNode->entries.push_back(entry);
     newNode->next = map->table[index];
@@ -99,7 +102,6 @@ void searchWord(HashMap *map, const char *word) {
     }
 }
 
-
 void freeHashMap(HashMap *map) {
     for (int i = 0; i < HASH_MAP_SIZE; i++) {
         HashMapNode *node = map->table[i];
@@ -108,5 +110,6 @@ void freeHashMap(HashMap *map) {
             node = node->next;
             delete temp;  // Use delete to free nodes
         }
+        map->table[i] = nullptr; // Prevent dangling pointers
     }
 }
