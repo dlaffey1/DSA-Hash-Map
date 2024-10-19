@@ -61,6 +61,7 @@ public:
     T* end();
     const T* begin() const;
     const T* end() const;
+    void resize(int newSize);
 private:
     int size;
     int capacity;

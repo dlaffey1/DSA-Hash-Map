@@ -3,15 +3,21 @@
 #include "hash_map.h"
 #include "Vector.h"  // Include your custom Vector class
 #include <algorithm>
+#include <set>
+#include <map>
 
 // Hash function to map a string to an index
 unsigned int hash(const std::string &key) {
     unsigned int hash = 0;
     for (char c : key) {
-        hash = (hash << 5) + c; // hash * 31 + c
+        hash = (hash << 5) - hash + c; // Equivalent to hash * 31 + c
+        // This uses the technique of shifting left by 5 (multiplying by 32), 
+        // subtracting the original hash (to make it effectively multiply by 31),
+        // and then adding the character's ASCII value.
     }
-    return hash % HASH_MAP_SIZE;
+    return hash % HASH_MAP_SIZE; // Ensure the result is within bounds of the hash map size
 }
+
 
 void initHashMap(HashMap *map) {
     memset(map->table, 0, sizeof(map->table));
@@ -24,9 +30,18 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     // Traverse the linked list at the index
     while (node != nullptr) {
         if (node->key == key) {
-            // Key already exists; update the entry
-            node->entries.push_back(entry); // Add the new entry
-            return true; // Return true to indicate successful update
+            // Key exists; update the entry for the specific docID
+            for (size_t i = 0; i < node->entries.getSize(); ++i) {
+                if (node->entries[i].docID == entry.docID) {
+                    // Update the existing entry's position and fileName, but do not modify TF here
+                    node->entries[i].position = entry.position; // Update position if needed
+                    node->entries[i].fileName = entry.fileName; // Update filename if needed
+                    return true; // Successfully updated
+                }
+            }
+            // If no entry for this docID exists, add a new one
+            node->entries.push_back(entry); // Add the new WordEntry
+            return true;
         }
         node = node->next;
     }
@@ -35,16 +50,46 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     HashMapNode *newNode = new HashMapNode;
     if (!newNode) {
         std::cerr << "Failed to allocate memory for HashMapNode." << std::endl;
-        return false; // Handle memory allocation failure
+        return false;
     }
 
     newNode->key = key;
-    newNode->entries.push_back(entry);
+    newNode->entries.push_back(entry); // Add the WordEntry
     newNode->next = map->table[index];
     map->table[index] = newNode;
 
-    return true; // Indicate successful insertion
+    return true;
 }
+
+
+
+// Function to retrieve a WordEntry from the hash map based on key and docID
+WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) {
+    size_t hashIndex = hash(key); // Calculate the hash index
+
+    // Ensure the hashIndex is within bounds of the hash map size
+    if (hashIndex >= HASH_MAP_SIZE) { // Changed to use HASH_MAP_SIZE
+        std::cerr << "Hash index out of bounds: " << hashIndex << std::endl;
+        return nullptr;
+    }
+
+    // Access the specific HashMapNode at the calculated hash index
+    HashMapNode *current = map->table[hashIndex]; // Correct access
+
+    while (current) {
+        // Search through the entries for the specific docID
+        for (size_t i = 0; i < current->entries.getSize(); ++i) {
+            if (current->entries[i].docID == docID) {
+                return &current->entries[i]; // Return pointer to the matching WordEntry
+            }
+        }
+        current = current->next; // Move to the next node in the linked list
+    }
+
+    return nullptr; // Return nullptr if no matching entry is found
+}
+
+
 
 // Function to compare WordEntry based on TF-IDF values
 bool compareByTFIDF(const WordEntry &a, const WordEntry &b) {
@@ -66,13 +111,13 @@ void sortVector(Vector<T> &vec, bool (*compare)(const T&, const T&)) {
     }
 }
 
-// Function to search for a word in the hash map and display top 10 documents based on TF-IDF
 void searchWord(HashMap *map, const char *word) {
     unsigned int index = hash(word);
     HashMapNode *node = map->table[index];
 
     Vector<WordEntry> results; // Store results here
 
+    // Traverse the linked list to find the word
     while (node != NULL) {
         if (strcmp(node->key.c_str(), word) == 0) { // Convert std::string to const char*
             for (int i = 0; i < node->entries.getSize(); ++i) {
@@ -91,16 +136,22 @@ void searchWord(HashMap *map, const char *word) {
     // Sort results based on TF-IDF values
     sortVector(results, compareByTFIDF); // Custom sorting
 
-    // Display the top 10 results
+    // Display the top 10 results, ensuring no duplicate document IDs are processed
     std::cout << "Found in documents (top 10 based on TF-IDF):\n";
+    std::set<int> displayedDocIDs; // To track displayed document IDs
     for (size_t i = 0; i < std::min(results.getSize(), 10); ++i) {
         const WordEntry &entry = results[i];
-        std::cout << "Document ID: " << entry.docID
-                  << ", Position: " << entry.position
-                  << ", File Name: " << entry.fileName
-                  << ", TF-IDF: " << entry.tfidf << std::endl;
+        if (displayedDocIDs.find(entry.docID) == displayedDocIDs.end()) { // If docID hasn't been displayed yet
+            std::cout << "Document ID: " << entry.docID
+                      << ", Position: " << entry.position
+                      << ", File Name: " << entry.fileName
+                      << ", TF-IDF: " << entry.tfidf 
+                      << ", TF: " << entry.tf << std::endl;
+            displayedDocIDs.insert(entry.docID); // Mark this docID as displayed
+        }
     }
 }
+
 
 void freeHashMap(HashMap *map) {
     for (int i = 0; i < HASH_MAP_SIZE; i++) {

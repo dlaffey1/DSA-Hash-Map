@@ -239,7 +239,22 @@ void Vector<T>::clear()
 {
     size = 0;
 }
-
+template <typename T>
+void Vector<T>::resize(int newSize)
+{
+    if (newSize > capacity)
+    {
+        T* newArray = new T[newSize];
+        for (int i = 0; i < size; ++i)
+        {
+            newArray[i] = array[i];
+        }
+        delete[] array;
+        array = newArray;
+        capacity = newSize;
+    }
+    size = newSize;
+}
 template <typename T>
 void Vector<T>::resize()
 {

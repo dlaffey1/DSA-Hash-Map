@@ -49,10 +49,12 @@ struct HashMapNode {
 
 struct HashMap {
     HashMapNode *table[HASH_MAP_SIZE];
+    size_t size;
 };
 
 void initHashMap(HashMap *map);
 bool insert(HashMap *map, const std::string &key, const WordEntry &entry);
+WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID);
 void searchWord(HashMap *map, const char *word);
 void freeHashMap(HashMap *map);
 
