@@ -14,7 +14,9 @@ unsigned int hash(const std::string &key, int size) {
     for (char c : key) {
         hash = (hash << 5) - hash + c; // Equivalent to hash * 31 + c
     }
-    return hash % size; // Ensure the result is within bounds of the hash map size
+    unsigned int index = hash % size; // Ensure the result is within bounds of the hash map size
+    // std::cout << "Hash for key '" << key << "': " << index << std::endl; // Debugging line
+    return index;
 }
 
 // Function to compare WordEntry based on TF-IDF values
@@ -48,7 +50,7 @@ void resizeHashMap(HashMap *map) {
     // Rehash all existing entries
     for (size_t i = 0; i < oldCapacity; ++i) {
         if (oldTable[i] != nullptr && oldTable[i] != TOMBSTONE) {
-            std::cout << "Rehashing entries from index " << i << " with key: " << oldTable[i]->key << std::endl;
+            // std::cout << "Rehashing entries from index " << i << " with key: " << oldTable[i]->key << std::endl;
             for (size_t j = 0; j < oldTable[i]->entries.getSize(); ++j) {
                 const WordEntry &entry = oldTable[i]->entries[j];
                 insert(map, oldTable[i]->key, entry); // Re-insert the entry into the new table
@@ -62,14 +64,15 @@ void resizeHashMap(HashMap *map) {
 void initHashMap(HashMap *map) {
     map->capacity = HASH_MAP_SIZE; // Set initial capacity
     map->table = new HashMapNode*[map->capacity](); // Allocate the table
-    map->size = 0; // Initialize size to 0
+    map->size = 100; // Initialize size to 0
     std::cout << "Initial size: " << map->size << std::endl;
 }
 
 bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     // Check if the map is effectively full before proceeding
     if (map->size >= map->capacity * 0.7) { 
-        std::cerr << "HashMap is effectively full (size: " << map->size << "), resizing..." << std::endl;
+        std::cerr << "HashMap is effectively full (size: " << map->size <<
+         "), resizing..." << std::endl;
         resizeHashMap(map); // Resize the hash map
     }
 
@@ -117,13 +120,16 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     newNode->entries.push_back(entry); // Add the WordEntry
     map->table[index] = newNode; // Insert new node in the hash map
     map->size++; // Increment the size of the hash map
-
+    //std::cout << "Inserting: " << key << " at index: " << index << std::endl;
+        std::cout << "Inserted new Word: " << key
+              << ", DocID: " << entry.docID
+              << " at index: " << index << std::endl;
     return true; // Insertion successful
 }
 
 // Function to retrieve a WordEntry from the hash map using linear probing
 WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) {
-    unsigned int index = hash(key, HASH_MAP_SIZE);
+    unsigned int index = hash(key, map->capacity); // Use current capacity
     unsigned int startIndex = index;  // Store initial index for loop detection
 
     while (map->table[index] != nullptr) {
@@ -135,7 +141,7 @@ WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) 
                 }
             }
         }
-        index = (index + 1) % HASH_MAP_SIZE; // Linear probing
+        index = (index + 1) % map->capacity; // Linear probing, now based on current capacity
         if (index == startIndex) {
             break;  // We've looped back to the start, no match found
         }
@@ -144,9 +150,10 @@ WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) 
     return nullptr; // No matching entry found
 }
 
+
 // Modified searchWord to work with open addressing
 void searchWord(HashMap *map, const char *word) {
-    unsigned int index = hash(word, HASH_MAP_SIZE);
+    unsigned int index = hash(word, map->capacity);
     unsigned int startIndex = index;
     Vector<WordEntry> results;
 
@@ -158,7 +165,7 @@ void searchWord(HashMap *map, const char *word) {
             }
             break; // Stop once the word is found
         }
-        index = (index + 1) % HASH_MAP_SIZE;
+        index = (index + 1) % map->capacity;
         if (index == startIndex) {
             break; // We've looped back to the start
         }
@@ -188,7 +195,7 @@ void searchWord(HashMap *map, const char *word) {
 
 // Function to delete an entry by key and docID
 bool deleteEntry(HashMap *map, const std::string &key, int docID) {
-    unsigned int index = hash(key, HASH_MAP_SIZE);
+    unsigned int index = hash(key, map->capacity);
     unsigned int startIndex = index; // Store the starting index for loop detection
 
     while (map->table[index] != nullptr) {
@@ -209,7 +216,7 @@ bool deleteEntry(HashMap *map, const std::string &key, int docID) {
             }
             return false; // Entry not found for deletion
         }
-        index = (index + 1) % HASH_MAP_SIZE; // Linear probing
+        index = (index + 1) % map->capacity; // Linear probing
         if (index == startIndex) {
             break; // Loop back to the start
         }

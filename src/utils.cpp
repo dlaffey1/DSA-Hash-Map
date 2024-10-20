@@ -12,24 +12,40 @@
 namespace fs = std::filesystem;
 
 // Function to clean the word by removing leading and trailing punctuation
+// Function to clean and normalize the word by removing punctuation and converting to lowercase
 std::string cleanWord(const std::string &word) {
-    std::string cleanedWord = word;
+    std::string cleanedWord;
 
-    // Remove leading punctuation
-    cleanedWord.erase(cleanedWord.begin(), std::find_if(cleanedWord.begin(), cleanedWord.end(),
-        [](unsigned char ch) {
-            return !std::ispunct(ch);
+    // Remove any leading/trailing punctuation and normalize the word
+    for (char ch : word) {
+        if (std::isalnum(ch)) {  // Keep only alphanumeric characters
+            cleanedWord += std::tolower(static_cast<unsigned char>(ch));  // Convert to lowercase
         }
-    ));
-
-    // Remove trailing punctuation
-    cleanedWord.erase(std::find_if(cleanedWord.rbegin(), cleanedWord.rend(),
-        [](unsigned char ch) {
-            return !std::ispunct(ch);
-        }
-    ).base(), cleanedWord.end());
+    }
 
     return cleanedWord;
+}
+
+void updateTFIDF(HashMap *index, const std::string &word, int docID, float tf, float idf, float tfidf) {
+    // Retrieve the specific WordEntry for the word and document ID
+    WordEntry *existingEntry = getEntryFromHashMap(index, word, docID);
+
+    if (existingEntry) {
+        // Update the entry with TF, IDF, and TF-IDF values
+        existingEntry->tf = tf;
+        existingEntry->idf = idf;
+        existingEntry->tfidf = tfidf;
+
+        // Debugging information
+        std::cout << "Updated WordEntry for word: " << word << ", DocID: " << docID
+                  << ", TF: " << tf << ", IDF: " << idf 
+                  << ", Index in HashMap: " << index
+                  << ", TF-IDF: " << tfidf << std::endl;
+    } else {
+        // Handle the case where the entry does not exist
+        std::cerr << "Error: WordEntry for word: \"" << word << "\", DocID: " << docID 
+                  << " not found in HashMap." << std::endl;
+    }
 }
 
 // Indexing function for books
@@ -94,7 +110,6 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
     calculateTFIDF(index, termFrequency, docFrequency, totalDocs);
 }
 
-// Calculate TF-IDF function
 void calculateTFIDF(HashMap *index, 
                     const std::map<std::string, std::map<int, int>> &termFrequency, 
                     const std::map<std::string, int> &docFrequency, 
@@ -116,34 +131,9 @@ void calculateTFIDF(HashMap *index,
             // Calculate TF-IDF
             float tfidfValue = tfValue * idfValue;
 
-            // Retrieve the specific WordEntry for the word and document ID
-            WordEntry *existingEntry = getEntryFromHashMap(index, word, docID);
-            if (existingEntry) {
-                // Update only the specific entry for this document
-                existingEntry->tf = tfValue;    // Update TF
-                existingEntry->idf = idfValue;  // Update IDF
-                existingEntry->tfidf = tfidfValue; // Update TF-IDF
-
-                // Debugging information
-                std::cout << "Updated WordEntry for word: " << word << ", DocID: " << docID
-                          << ", TF: " << tfValue << ", IDF: " << idfValue 
-                          << ", TF-IDF: " << tfidfValue << std::endl;
-            } else {
-                // Handle the case where the entry does not exist
-                // std::cerr << "Error: WordEntry for word: " << word << ", DocID: " << docID 
-                //           << " not found in HashMap." << std::endl;
-            }
-        }
-    }
-
-    // Validate all keys exist
-    for (const auto& key : index->keys()) {
-        // Here, we do not need docID since we want to ensure all keys are present
-        WordEntry* entry = getEntryFromHashMap(index, key, 1); // Use a valid docID or handle appropriately
-        if (entry) {
-            // std::cout << "Confirmed WordEntry for word: " << key << " exists." << std::endl;
-        } else {
-            // std::cerr << "Warning: WordEntry for key: " << key << " is missing in HashMap." << std::endl;
+            // Use the update function to apply the values to the hashmap
+            updateTFIDF(index, word, docID, tfValue, idfValue, tfidfValue);
         }
     }
 }
+
