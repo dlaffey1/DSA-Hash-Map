@@ -1,16 +1,38 @@
 #include "utils.h"
+#include <algorithm>
+#include <cctype>
 #include <iostream>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <map>
-#include "Vector.h"
-#include <string>
-#include "hash_map.h"
-#include "trie.h"
 #include <cmath>
+#include "Vector.h"
+#include "hash_map.h"
 
 namespace fs = std::filesystem;
 
+// Function to clean the word by removing leading and trailing punctuation
+std::string cleanWord(const std::string &word) {
+    std::string cleanedWord = word;
+
+    // Remove leading punctuation
+    cleanedWord.erase(cleanedWord.begin(), std::find_if(cleanedWord.begin(), cleanedWord.end(),
+        [](unsigned char ch) {
+            return !std::ispunct(ch);
+        }
+    ));
+
+    // Remove trailing punctuation
+    cleanedWord.erase(std::find_if(cleanedWord.rbegin(), cleanedWord.rend(),
+        [](unsigned char ch) {
+            return !std::ispunct(ch);
+        }
+    ).base(), cleanedWord.end());
+
+    return cleanedWord;
+}
+
+// Indexing function for books
 void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &directory) {
     int docID = 1;  // Start with document ID 1
     std::map<std::string, std::map<int, int>> termFrequency;  // word -> (docID -> count)
@@ -31,17 +53,23 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
                 std::map<std::string, int> currentDocTermFrequency;
 
                 while (file >> word) {
+                    // Clean the word to remove punctuation
+                    std::string cleanedWord = cleanWord(word);
+                    if (cleanedWord.empty()) continue; // Skip if the cleaned word is empty
+
                     // Track term frequency for this document
-                    currentDocTermFrequency[word]++;
+                    currentDocTermFrequency[cleanedWord]++;
 
                     // Create a new WordEntry
                     WordEntry wordEntry = { docID, position, fileName, 0.0f, 0.0f, 0.0f }; // Initialize TF, IDF, and TF-IDF to 0
 
-                    // Insert into the hash map
-                    if (!insert(index, word.c_str(), wordEntry)) {
-                        std::cerr << "Error inserting into hash map for word: " << word << std::endl;
+                    // Insert into the hash map using the standalone function
+                    if (!insert(index, cleanedWord.c_str(), wordEntry)) {  // Changed to standalone function
+                        std::cerr << "Error inserting into hash map for word: " << cleanedWord << std::endl;
                     }
-                    insertTrie(autocompleteTrie, word.c_str());
+
+                    // Insert into the trie
+                    insertTrie(autocompleteTrie, cleanedWord.c_str());
                     position++;
                 }
 
@@ -66,10 +94,12 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
     calculateTFIDF(index, termFrequency, docFrequency, totalDocs);
 }
 
+// Calculate TF-IDF function
 void calculateTFIDF(HashMap *index, 
-                     const std::map<std::string, std::map<int, int>> &termFrequency, 
-                     const std::map<std::string, int> &docFrequency, 
-                     int totalDocs) {
+                    const std::map<std::string, std::map<int, int>> &termFrequency, 
+                    const std::map<std::string, int> &docFrequency, 
+                    int totalDocs) {
+    // Iterate through all unique terms in the termFrequency map
     for (const auto &termEntry : termFrequency) {
         const std::string &word = termEntry.first;
 
@@ -85,17 +115,35 @@ void calculateTFIDF(HashMap *index,
 
             // Calculate TF-IDF
             float tfidfValue = tfValue * idfValue;
-            // Update the TF, IDF, and TF-IDF in the corresponding WordEntry in the hash map
-            WordEntry *existingEntry = getEntryFromHashMap(index, word.c_str(), docID); // Your method to get the entry
+
+            // Retrieve the specific WordEntry for the word and document ID
+            WordEntry *existingEntry = getEntryFromHashMap(index, word, docID);
             if (existingEntry) {
+                // Update only the specific entry for this document
                 existingEntry->tf = tfValue;    // Update TF
                 existingEntry->idf = idfValue;  // Update IDF
                 existingEntry->tfidf = tfidfValue; // Update TF-IDF
-                        // Print for debugging
-        std::cout << "Word: " << word << ", DocID: " << docID << ", TF: " << tf 
-                  << ", DF: " << df << ", IDF: " << idfValue << ", TF-IDF: " << tfidfValue << std::endl;
+
+                // Debugging information
+                std::cout << "Updated WordEntry for word: " << word << ", DocID: " << docID
+                          << ", TF: " << tfValue << ", IDF: " << idfValue 
+                          << ", TF-IDF: " << tfidfValue << std::endl;
+            } else {
+                // Handle the case where the entry does not exist
+                // std::cerr << "Error: WordEntry for word: " << word << ", DocID: " << docID 
+                //           << " not found in HashMap." << std::endl;
             }
         }
     }
-}
 
+    // Validate all keys exist
+    for (const auto& key : index->keys()) {
+        // Here, we do not need docID since we want to ensure all keys are present
+        WordEntry* entry = getEntryFromHashMap(index, key, 1); // Use a valid docID or handle appropriately
+        if (entry) {
+            // std::cout << "Confirmed WordEntry for word: " << key << " exists." << std::endl;
+        } else {
+            // std::cerr << "Warning: WordEntry for key: " << key << " is missing in HashMap." << std::endl;
+        }
+    }
+}

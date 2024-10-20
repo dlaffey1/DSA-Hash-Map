@@ -4,92 +4,18 @@
 #include "Vector.h"  // Include your custom Vector class
 #include <algorithm>
 #include <set>
-#include <map>
+
+// Define a constant for tombstones to handle deletions
+HashMapNode* TOMBSTONE = reinterpret_cast<HashMapNode*>(-1);
 
 // Hash function to map a string to an index
-unsigned int hash(const std::string &key) {
+unsigned int hash(const std::string &key, int size) {
     unsigned int hash = 0;
     for (char c : key) {
         hash = (hash << 5) - hash + c; // Equivalent to hash * 31 + c
-        // This uses the technique of shifting left by 5 (multiplying by 32), 
-        // subtracting the original hash (to make it effectively multiply by 31),
-        // and then adding the character's ASCII value.
     }
-    return hash % HASH_MAP_SIZE; // Ensure the result is within bounds of the hash map size
+    return hash % size; // Ensure the result is within bounds of the hash map size
 }
-
-
-void initHashMap(HashMap *map) {
-    memset(map->table, 0, sizeof(map->table));
-}
-
-bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
-    unsigned int index = hash(key);
-    HashMapNode *node = map->table[index];
-
-    // Traverse the linked list at the index
-    while (node != nullptr) {
-        if (node->key == key) {
-            // Key exists; update the entry for the specific docID
-            for (size_t i = 0; i < node->entries.getSize(); ++i) {
-                if (node->entries[i].docID == entry.docID) {
-                    // Update the existing entry's position and fileName, but do not modify TF here
-                    node->entries[i].position = entry.position; // Update position if needed
-                    node->entries[i].fileName = entry.fileName; // Update filename if needed
-                    return true; // Successfully updated
-                }
-            }
-            // If no entry for this docID exists, add a new one
-            node->entries.push_back(entry); // Add the new WordEntry
-            return true;
-        }
-        node = node->next;
-    }
-
-    // Key does not exist; create a new node
-    HashMapNode *newNode = new HashMapNode;
-    if (!newNode) {
-        std::cerr << "Failed to allocate memory for HashMapNode." << std::endl;
-        return false;
-    }
-
-    newNode->key = key;
-    newNode->entries.push_back(entry); // Add the WordEntry
-    newNode->next = map->table[index];
-    map->table[index] = newNode;
-
-    return true;
-}
-
-
-
-// Function to retrieve a WordEntry from the hash map based on key and docID
-WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) {
-    size_t hashIndex = hash(key); // Calculate the hash index
-
-    // Ensure the hashIndex is within bounds of the hash map size
-    if (hashIndex >= HASH_MAP_SIZE) { // Changed to use HASH_MAP_SIZE
-        std::cerr << "Hash index out of bounds: " << hashIndex << std::endl;
-        return nullptr;
-    }
-
-    // Access the specific HashMapNode at the calculated hash index
-    HashMapNode *current = map->table[hashIndex]; // Correct access
-
-    while (current) {
-        // Search through the entries for the specific docID
-        for (size_t i = 0; i < current->entries.getSize(); ++i) {
-            if (current->entries[i].docID == docID) {
-                return &current->entries[i]; // Return pointer to the matching WordEntry
-            }
-        }
-        current = current->next; // Move to the next node in the linked list
-    }
-
-    return nullptr; // Return nullptr if no matching entry is found
-}
-
-
 
 // Function to compare WordEntry based on TF-IDF values
 bool compareByTFIDF(const WordEntry &a, const WordEntry &b) {
@@ -99,8 +25,8 @@ bool compareByTFIDF(const WordEntry &a, const WordEntry &b) {
 // Function to sort the custom Vector based on a comparison function
 template<typename T>
 void sortVector(Vector<T> &vec, bool (*compare)(const T&, const T&)) {
-    for (int i = 0; i < vec.getSize() - 1; ++i) {
-        for (int j = 0; j < vec.getSize() - 1 - i; ++j) {
+    for (size_t i = 0; i < vec.getSize() - 1; ++i) {
+        for (size_t j = 0; j < vec.getSize() - 1 - i; ++j) {
             if (compare(vec[j + 1], vec[j])) {
                 // Swap elements
                 T temp = vec[j];
@@ -111,21 +37,131 @@ void sortVector(Vector<T> &vec, bool (*compare)(const T&, const T&)) {
     }
 }
 
-void searchWord(HashMap *map, const char *word) {
-    unsigned int index = hash(word);
-    HashMapNode *node = map->table[index];
+void resizeHashMap(HashMap *map) {
+    std::cout << "Resizing HashMap from capacity " << map->capacity << " to " << map->capacity * 2 << std::endl;
+    
+    size_t oldCapacity = map->capacity; // Store the old capacity
+    HashMapNode **oldTable = map->table; // Store the old table
+    map->capacity *= 2; // Double the size
+    map->table = new HashMapNode*[map->capacity](); // Allocate new table
 
-    Vector<WordEntry> results; // Store results here
-
-    // Traverse the linked list to find the word
-    while (node != NULL) {
-        if (strcmp(node->key.c_str(), word) == 0) { // Convert std::string to const char*
-            for (int i = 0; i < node->entries.getSize(); ++i) {
-                results.push_back(node->entries[i]); // Collect entries
+    // Rehash all existing entries
+    for (size_t i = 0; i < oldCapacity; ++i) {
+        if (oldTable[i] != nullptr && oldTable[i] != TOMBSTONE) {
+            std::cout << "Rehashing entries from index " << i << " with key: " << oldTable[i]->key << std::endl;
+            for (size_t j = 0; j < oldTable[i]->entries.getSize(); ++j) {
+                const WordEntry &entry = oldTable[i]->entries[j];
+                insert(map, oldTable[i]->key, entry); // Re-insert the entry into the new table
             }
-            break; // Stop searching once the word is found
+            delete oldTable[i]; // Free the old node
         }
-        node = node->next;
+    }
+    delete[] oldTable; // Free the old table
+}
+
+void initHashMap(HashMap *map) {
+    map->capacity = HASH_MAP_SIZE; // Set initial capacity
+    map->table = new HashMapNode*[map->capacity](); // Allocate the table
+    map->size = 0; // Initialize size to 0
+    std::cout << "Initial size: " << map->size << std::endl;
+}
+
+bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
+    // Check if the map is effectively full before proceeding
+    if (map->size >= map->capacity * 0.7) { 
+        std::cerr << "HashMap is effectively full (size: " << map->size << "), resizing..." << std::endl;
+        resizeHashMap(map); // Resize the hash map
+    }
+
+    unsigned int index = hash(key, map->capacity);
+    unsigned int startIndex = index; // Save the starting index for loop detection
+
+    while (map->table[index] != nullptr) {
+        if (map->table[index] == TOMBSTONE) {
+            break; // Continue searching to insert the new key
+        }
+
+        if (map->table[index]->key == key) {
+            // Key exists; update the entry for the specific docID
+            for (size_t i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                if (map->table[index]->entries[i].docID == entry.docID) {
+                    // Update the existing entry's position and fileName
+                    map->table[index]->entries[i].position = entry.position;
+                    map->table[index]->entries[i].fileName = entry.fileName;
+                    return true; // Update successful
+                }
+            }
+            // Add a new entry for the docID
+            map->table[index]->entries.push_back(entry); // Add the new WordEntry
+            return true; // Insertion successful
+        }
+
+        // Linear probing: check the next slot
+        index = (index + 1) % map->capacity;
+
+        // Check if we have looped back to the start
+        if (index == startIndex) {
+            std::cerr << "HashMap is full, cannot insert!" << std::endl;
+            return false; // The table is full, failed to insert
+        }
+    }
+
+    // Insert new node if key does not exist
+    HashMapNode *newNode = new HashMapNode; // Allocate new node
+    if (!newNode) {
+        std::cerr << "Failed to allocate memory for HashMapNode." << std::endl;
+        return false; // Memory allocation failed
+    }
+
+    newNode->key = key; // Set the key
+    newNode->entries.push_back(entry); // Add the WordEntry
+    map->table[index] = newNode; // Insert new node in the hash map
+    map->size++; // Increment the size of the hash map
+
+    return true; // Insertion successful
+}
+
+// Function to retrieve a WordEntry from the hash map using linear probing
+WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) {
+    unsigned int index = hash(key, HASH_MAP_SIZE);
+    unsigned int startIndex = index;  // Store initial index for loop detection
+
+    while (map->table[index] != nullptr) {
+        if (map->table[index] != TOMBSTONE && map->table[index]->key == key) {
+            // Search through entries for the matching docID
+            for (size_t i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                if (map->table[index]->entries[i].docID == docID) {
+                    return &map->table[index]->entries[i]; // Return pointer to the entry
+                }
+            }
+        }
+        index = (index + 1) % HASH_MAP_SIZE; // Linear probing
+        if (index == startIndex) {
+            break;  // We've looped back to the start, no match found
+        }
+    }
+
+    return nullptr; // No matching entry found
+}
+
+// Modified searchWord to work with open addressing
+void searchWord(HashMap *map, const char *word) {
+    unsigned int index = hash(word, HASH_MAP_SIZE);
+    unsigned int startIndex = index;
+    Vector<WordEntry> results;
+
+    // Traverse the table using linear probing to find the word
+    while (map->table[index] != nullptr) {
+        if (map->table[index] != TOMBSTONE && strcmp(map->table[index]->key.c_str(), word) == 0) {
+            for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                results.push_back(map->table[index]->entries[i]); // Collect entries
+            }
+            break; // Stop once the word is found
+        }
+        index = (index + 1) % HASH_MAP_SIZE;
+        if (index == startIndex) {
+            break; // We've looped back to the start
+        }
     }
 
     if (results.empty()) {
@@ -133,34 +169,81 @@ void searchWord(HashMap *map, const char *word) {
         return;
     }
 
-    // Sort results based on TF-IDF values
-    sortVector(results, compareByTFIDF); // Custom sorting
-
-    // Display the top 10 results, ensuring no duplicate document IDs are processed
+    // Sort results by TF-IDF and display the top 10
+    sortVector(results, compareByTFIDF);
+    std::set<int> displayedDocIDs;
     std::cout << "Found in documents (top 10 based on TF-IDF):\n";
-    std::set<int> displayedDocIDs; // To track displayed document IDs
     for (size_t i = 0; i < std::min(results.getSize(), 10); ++i) {
         const WordEntry &entry = results[i];
-        if (displayedDocIDs.find(entry.docID) == displayedDocIDs.end()) { // If docID hasn't been displayed yet
+        if (displayedDocIDs.insert(entry.docID).second) {
             std::cout << "Document ID: " << entry.docID
                       << ", Position: " << entry.position
                       << ", File Name: " << entry.fileName
-                      << ", TF-IDF: " << entry.tfidf 
+                      << ", TF-IDF: " << entry.tfidf
                       << ", TF: " << entry.tf << std::endl;
-            displayedDocIDs.insert(entry.docID); // Mark this docID as displayed
+            displayedDocIDs.insert(entry.docID);
         }
     }
 }
 
+// Function to delete an entry by key and docID
+bool deleteEntry(HashMap *map, const std::string &key, int docID) {
+    unsigned int index = hash(key, HASH_MAP_SIZE);
+    unsigned int startIndex = index; // Store the starting index for loop detection
 
+    while (map->table[index] != nullptr) {
+        if (map->table[index] != TOMBSTONE && map->table[index]->key == key) {
+            // Search for the specific entry to delete
+            for (size_t i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                if (map->table[index]->entries[i].docID == docID) {
+                    // Remove the entry from the Vector
+                    map->table[index]->entries.erase(i); // Use the erase method to remove the entry
+                    if (map->table[index]->entries.getSize() == 0) {
+                        // If no entries left, mark the node as a tombstone
+                        delete map->table[index]; // Free the node memory
+                        map->table[index] = TOMBSTONE; // Mark as deleted
+                    }
+                    map->size--; // Decrement size
+                    return true; // Deletion successful
+                }
+            }
+            return false; // Entry not found for deletion
+        }
+        index = (index + 1) % HASH_MAP_SIZE; // Linear probing
+        if (index == startIndex) {
+            break; // Loop back to the start
+        }
+    }
+
+    return false; // Key not found
+}
+
+
+// Function to retrieve all keys in the hash map
+void keys(HashMap *map, Vector<std::string> &keyVector) {
+    for (size_t i = 0; i < map->capacity; ++i) {
+        if (map->table[i] != nullptr && map->table[i] != TOMBSTONE) {
+            keyVector.push_back(map->table[i]->key); // Add the key to the vector
+        }
+    }
+}
+
+// Destructor for HashMap to free allocated memory
+void destroyHashMap(HashMap *map) {
+    for (size_t i = 0; i < map->capacity; ++i) {
+        if (map->table[i] != nullptr && map->table[i] != TOMBSTONE) {
+            delete map->table[i]; // Free each node
+        }
+    }
+    delete[] map->table; // Free the table itself
+}
+// Free the hash map
 void freeHashMap(HashMap *map) {
-    for (int i = 0; i < HASH_MAP_SIZE; i++) {
-        HashMapNode *node = map->table[i];
-        while (node != NULL) {
-            HashMapNode *temp = node;
-            node = node->next;
-            delete temp;  // Use delete to free nodes
+    for (size_t i = 0; i < map->capacity; ++i) {
+        if (map->table[i] != nullptr && map->table[i] != TOMBSTONE) {
+            delete map->table[i]; // Free nodes
         }
-        map->table[i] = nullptr; // Prevent dangling pointers
     }
+    delete[] map->table; // Free the table
 }
+
