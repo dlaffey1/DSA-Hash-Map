@@ -2,7 +2,7 @@
 Steps to run the project:
 1.From root of project run "make clean"
 2. Then run "make"
-3. Then run ./MiniSearchEngine which will prompt the program
+3. Then run ./MiniSearchEngine or MiniSearchEngine.exe which will prompt the program
 
 Layout for the files:
 utils.cpp- Contains the indexing for the project and also contains the TF-IDF for all of the words which are indexed. This is used later once a word is searched to quickly find the files in the top 10 which have the most occurences of the searched word. 
