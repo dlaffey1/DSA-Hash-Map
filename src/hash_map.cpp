@@ -4,6 +4,7 @@
 #include "Vector.h"  // Include your custom Vector class
 #include <algorithm>
 #include <set>
+#include <sstream>
 
 // Define a constant for tombstones to handle deletions
 HashMapNode* TOMBSTONE = reinterpret_cast<HashMapNode*>(-1);
@@ -150,45 +151,207 @@ WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) 
     return nullptr; // No matching entry found
 }
 
+void searchWord(HashMap *map, const std::string &query) {
+    std::istringstream iss(query);
+    std::string token;
+    Vector<std::string> includeWords;
+    Vector<std::string> excludeWords;
 
-// Modified searchWord to work with open addressing
-void searchWord(HashMap *map, const char *word) {
-    unsigned int index = hash(word, map->capacity);
-    unsigned int startIndex = index;
-    Vector<WordEntry> results;
-
-    // Traverse the table using linear probing to find the word
-    while (map->table[index] != nullptr) {
-        if (map->table[index] != TOMBSTONE && strcmp(map->table[index]->key.c_str(), word) == 0) {
-            for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
-                results.push_back(map->table[index]->entries[i]); // Collect entries
-            }
-            break; // Stop once the word is found
-        }
-        index = (index + 1) % map->capacity;
-        if (index == startIndex) {
-            break; // We've looped back to the start
+    // Parse the query for operators and words
+    std::cout << "[DEBUG] Parsing query: " << query << std::endl;
+    while (iss >> token) {
+        if (token == "AND" || token == "OR") {
+            std::cout << "[DEBUG] Found operator: " << token << std::endl;
+            continue;
+        } else if (token == "NOT") {
+            iss >> token;
+            excludeWords.push_back(token);
+            std::cout << "[DEBUG] Excluding word: " << token << std::endl;
+        } else {
+            includeWords.push_back(token);
+            std::cout << "[DEBUG] Including word: " << token << std::endl;
         }
     }
 
-    if (results.empty()) {
-        std::cout << "Word not found!" << std::endl;
+    // Vector to store results
+    Vector<WordEntry> results;
+
+    // Handle AND logic
+    if (!includeWords.empty()) {
+        std::set<int> intersectionDocIDs; // Store document IDs found for AND operation
+        bool firstWord = true;
+
+        for (const std::string &word : includeWords) {
+            std::set<int> currentWordDocIDs; // Store document IDs for the current word
+            unsigned int index = hash(word, map->capacity);
+            unsigned int startIndex = index;
+
+            // Linear probing to find the word
+            while (map->table[index] != nullptr) {
+                if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
+                    std::cout << "[DEBUG] Found word: " << word << " in hash map." << std::endl;
+                    for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                        currentWordDocIDs.insert(map->table[index]->entries[i].docID);
+                    }
+                    break; // Stop once the word is found
+                }
+                index = (index + 1) % map->capacity;
+                if (index == startIndex) {
+                    break; // We've looped back to the start
+                }
+            }
+
+            if (firstWord) {
+                intersectionDocIDs = std::move(currentWordDocIDs);
+                firstWord = false; // Now we have the first word's document IDs
+            } else {
+                // Perform intersection with existing document IDs
+                std::set<int> tempSet;
+                for (const int docID : currentWordDocIDs) {
+                    if (intersectionDocIDs.count(docID) > 0) {
+                        tempSet.insert(docID); // Keep only those in both sets
+                    }
+                }
+                intersectionDocIDs = std::move(tempSet);
+            }
+        }
+
+        std::cout << "[DEBUG] Intersection document IDs for AND: ";
+        for (const int docID : intersectionDocIDs) {
+            std::cout << docID << " ";
+        }
+        std::cout << std::endl;
+
+        // Now gather results based on the intersectionDocIDs
+        for (const int docID : intersectionDocIDs) {
+            // Check if excluded
+            bool isExcluded = false;
+            for (const std::string &excludeWord : excludeWords) {
+                if (getEntryFromHashMap(map, excludeWord, docID)) {
+                    isExcluded = true; // Exclude this document
+                    std::cout << "[DEBUG] Excluded document ID: " << docID << " for word: " << excludeWord << std::endl;
+                    break;
+                }
+            }
+            if (!isExcluded) {
+                // If not excluded, gather all entries for this docID
+                for (const auto &word : includeWords) {
+                    unsigned int index = hash(word, map->capacity);
+                    unsigned int startIndex = index;
+
+                    while (map->table[index] != nullptr) {
+                        if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
+                            for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                                const WordEntry &entry = map->table[index]->entries[i];
+                                if (entry.docID == docID) {
+                                    results.push_back(entry);
+                                }
+                            }
+                            break;
+                        }
+                        index = (index + 1) % map->capacity;
+                        if (index == startIndex) {
+                            break; // We've looped back to the start
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Handle OR logic: if no AND words, use OR logic
+    if (includeWords.empty() && !excludeWords.empty()) {
+        std::cout << "No included words to search for!" << std::endl;
         return;
     }
 
-    // Sort results by TF-IDF and display the top 10
+    // Handle OR logic for include words (if no AND search was executed)
+    if (!results.empty()) {
+        std::set<int> docIDs; // To ensure unique document IDs for OR logic
+        for (const std::string &word : includeWords) {
+            unsigned int index = hash(word, map->capacity);
+            unsigned int startIndex = index;
+
+            // Linear probing to find the word
+            while (map->table[index] != nullptr) {
+                if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
+                    for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                        const WordEntry &entry = map->table[index]->entries[i];
+
+                        // Check if the entry is excluded
+                        bool exclude = false;
+                        for (const std::string &excludeWord : excludeWords) {
+                            if (getEntryFromHashMap(map, excludeWord, entry.docID)) {
+                                exclude = true; // Exclude this entry
+                                break;
+                            }
+                        }
+
+                        // Add entry only if it's not excluded and not already in results
+                        if (!exclude && docIDs.insert(entry.docID).second) {
+                            results.push_back(entry);
+                            std::cout << "[DEBUG] Adding result for OR: Document ID: " << entry.docID << std::endl;
+                        }
+                    }
+                    break; // Stop once the word is found
+                }
+                index = (index + 1) % map->capacity;
+                if (index == startIndex) {
+                    break; // We've looped back to the start
+                }
+            }
+        }
+    }
+
+    // Sort results by TF-IDF
     sortVector(results, compareByTFIDF);
+
+    if (results.empty()) {
+        std::cout << "No matching results found!" << std::endl;
+        return;
+    }
+
+    // Display the results in pages of 10
+    size_t totalResults = results.getSize();
+    size_t count = 0;
+    std::cout << "Found in documents (top results based on TF-IDF):\n";
+
+    // Use a set to track already displayed document IDs
     std::set<int> displayedDocIDs;
-    std::cout << "Found in documents (top 10 based on TF-IDF):\n";
-    for (size_t i = 0; i < std::min(results.getSize(), 10); ++i) {
-        const WordEntry &entry = results[i];
-        if (displayedDocIDs.insert(entry.docID).second) {
-            std::cout << "Document ID: " << entry.docID
-                      << ", Position: " << entry.position
-                      << ", File Name: " << entry.fileName
-                      << ", TF-IDF: " << entry.tfidf
-                      << ", TF: " << entry.tf << std::endl;
-            displayedDocIDs.insert(entry.docID);
+
+    while (count < totalResults) {
+        // Display the next 10 results
+        for (size_t i = count; i < count + 10 && i < totalResults; ++i) {
+            const WordEntry &entry = results[i];
+
+            // Check if this document ID has already been displayed
+            if (displayedDocIDs.insert(entry.docID).second) { // Insert returns false if the ID was already present
+                std::cout << "Document ID: " << entry.docID
+                          << ", Position: " << entry.position
+                          << ", File Name: " << entry.fileName
+                          << ", TF-IDF: " << entry.tfidf
+                          << ", TF: " << entry.tf << std::endl;
+            }
+        }
+        count += 10; // Increment the count by 10
+
+        // Check if there are more results to show
+        if (count < totalResults) {
+            std::string response;
+            while (true) {
+                std::cout << "Type 'yes' to view the next results or 'no' to exit...\n";
+                std::getline(std::cin, response);
+
+                // If the user types 'no', exit the loop
+                if (response == "no") {
+                    std::cout << "Exiting result display." << std::endl;
+                    return; // Exit the searchWord function
+                } else if (response == "yes") {
+                    break; // User typed 'yes', continue to the next results
+                } else {
+                    std::cout << "Invalid input. Please type 'yes' or 'no'." << std::endl;
+                }
+            }
         }
     }
 }

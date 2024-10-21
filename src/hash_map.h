@@ -62,7 +62,7 @@ struct HashMap {
 public:
     Vector<std::string> keys() {  // Change to use custom Vector
         Vector<std::string> keyList;
-        for (size_t i = 0; i < capacity; ++i) { // Use capacity instead of HASH_MAP_SIZE
+        for (size_t i = 0; i < capacity; ++i) { 
             if (table[i] != nullptr && table[i] != TOMBSTONE) { // Check for nullptr and tombstone
                 keyList.push_back(table[i]->key); // Ensure HashMapNode has a public member `key`
             }
@@ -82,7 +82,7 @@ void sortVector(Vector<T> &vec, bool (*compare)(const T&, const T&));
 void initHashMap(HashMap *map);
 bool insert(HashMap *map, const std::string &key, const WordEntry &entry);
 WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID);
-void searchWord(HashMap *map, const char *word);
+void searchWord(HashMap *map, const std::string &query);
 bool deleteEntry(HashMap *map, const std::string &key, int docID); // Added prototype for deletion
 void freeHashMap(HashMap *map);
 void resizeHashMap(HashMap *map); // Prototype for resizing

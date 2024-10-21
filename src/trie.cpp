@@ -62,29 +62,34 @@ void autocomplete(Trie *trie, const char *prefix) {
 
     // Traverse the trie to the end of the prefix
     for (int i = 0; prefix[i] != '\0'; ++i) {
-        int index = charToIndex(prefix[i]); // Using the charToIndex function
+        int index = charToIndex(prefix[i]); // Use charToIndex function
 
         if (index == -1) { // Check for invalid character
             std::cout << "Invalid character in prefix: " << prefix << std::endl;
-            return; // Exit if invalid
+            return; // Exit if invalid character is found
         }
 
         if (!node->children[index]) {
             std::cout << "No words found with prefix: " << prefix << std::endl;
-            return; // Exit if prefix not found
+            return; // Exit if the prefix is not found in the trie
         }
 
-        node = node->children[index];
+        node = node->children[index]; // Move to the next node
     }
 
-    // Find and display results
+    // Collect all words starting with the given prefix
     Vector<std::string> results;
-    std::string currentWord = prefix; // Start with the prefix
-    findWords(node, currentWord, results);
+    std::string currentWord = prefix; // Initialize with the prefix itself
+    findWords(node, currentWord, results); // Use helper function to find words
 
-    // Display results
-    for (const std::string &word : results) {
-        std::cout << word << std::endl;
+    // Display results, limit to 10 if necessary
+    if (results.getSize() == 0) {
+        std::cout << "No words found with prefix: " << prefix << std::endl;
+    } else {
+        std::cout << "Words found with prefix '" << prefix << "':" << std::endl;
+        for (int i = 0; i < results.getSize() && i < 10; ++i) { // Limit to 10 words
+            std::cout << results[i] << std::endl;
+        }
     }
 }
 
