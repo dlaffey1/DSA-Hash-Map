@@ -62,24 +62,15 @@ void autocomplete(Trie *trie, const char *prefix) {
 
     // Traverse the trie to the end of the prefix
     for (int i = 0; prefix[i] != '\0'; ++i) {
-<<<<<<< HEAD
         int index = charToIndex(prefix[i]); // Using the charToIndex function
 
         if (index == -1) { // Check for invalid character
             std::cout << "Invalid character in prefix: " << prefix << std::endl;
             return; // Exit if invalid
-=======
-        int index = charToIndex(prefix[i]); // Use charToIndex function
-
-        if (index == -1) { // Check for invalid character
-            std::cout << "Invalid character in prefix: " << prefix << std::endl;
-            return; // Exit if invalid character is found
->>>>>>> 0c69badd2aa34f521ff4a8eb08c57394f1cc9030
         }
 
         if (!node->children[index]) {
             std::cout << "No words found with prefix: " << prefix << std::endl;
-<<<<<<< HEAD
             return; // Exit if prefix not found
         }
 
@@ -94,27 +85,6 @@ void autocomplete(Trie *trie, const char *prefix) {
     // Display results
     for (const std::string &word : results) {
         std::cout << word << std::endl;
-=======
-            return; // Exit if the prefix is not found in the trie
-        }
-
-        node = node->children[index]; // Move to the next node
-    }
-
-    // Collect all words starting with the given prefix
-    Vector<std::string> results;
-    std::string currentWord = prefix; // Initialize with the prefix itself
-    findWords(node, currentWord, results); // Use helper function to find words
-
-    // Display results, limit to 10 if necessary
-    if (results.getSize() == 0) {
-        std::cout << "No words found with prefix: " << prefix << std::endl;
-    } else {
-        std::cout << "Words found with prefix '" << prefix << "':" << std::endl;
-        for (int i = 0; i < results.getSize() && i < 10; ++i) { // Limit to 10 words
-            std::cout << results[i] << std::endl;
-        }
->>>>>>> 0c69badd2aa34f521ff4a8eb08c57394f1cc9030
     }
 }
 
