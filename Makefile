@@ -1,5 +1,6 @@
 CC = g++
 CFLAGS = -std=c++17
+INCLUDE = -I./include
 
 # Source files
 SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp src/Vector.cpp
@@ -14,7 +15,7 @@ $(EXECUTABLE): $(OBJECTS)
 
 # Rule for compiling object files
 %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 # Clean rule
 clean:
