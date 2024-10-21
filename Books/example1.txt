@@ -1,3 +1,0 @@
-This is the first example file.
-It contains some sample content.
-You can add more lines as needed to test file tracking in Git.
