@@ -1,16 +1,34 @@
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 #include "hash_map.h"
 #include "trie.h"
 #include "utils.h"
+#include "Serializer.h"
+#include <string>
 
 int main() {
     HashMap index;
     Trie autocompleteTrie;
+    Serializer serializer;
+
     initHashMap(&index);
     initTrie(&autocompleteTrie);
 
-    // Index books from the data directory
-    indexBooks(&index, &autocompleteTrie, "data");
+    std::string hashFilePath = "index/hashmap.bin";
+
+    std::ifstream hashmapFile(hashFilePath, std::ios::binary);
+
+    std::cout << "hashmapFile.good() " << hashmapFile.good() << std::endl;
+
+    if (hashmapFile.good()) {
+        std::cout << "Loading existing index and trie from file..." << std::endl;
+        serializer.deserializeHashMap(&index, hashFilePath);
+    } else {
+        // Index books from the data directory
+        std::cout << "Index file not found. Indexing textbooks..." << std::endl;
+        indexBooks(&index, &autocompleteTrie, "data", serializer);
+    }
 
     // Search for a word
     char query[100];

@@ -122,9 +122,9 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     map->table[index] = newNode; // Insert new node in the hash map
     map->size++; // Increment the size of the hash map
     //std::cout << "Inserting: " << key << " at index: " << index << std::endl;
-        std::cout << "Inserted new Word: " << key
-              << ", DocID: " << entry.docID
-              << " at index: " << index << std::endl;
+        // std::cout << "Inserted new Word: " << key
+        //       << ", DocID: " << entry.docID
+        //       << " at index: " << index << std::endl;
     return true; // Insertion successful
 }
 

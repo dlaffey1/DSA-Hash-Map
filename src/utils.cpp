@@ -8,6 +8,7 @@
 #include <cmath>
 #include "Vector.h"
 #include "hash_map.h"
+#include "Serializer.h"
 
 namespace fs = std::filesystem;
 
@@ -37,10 +38,10 @@ void updateTFIDF(HashMap *index, const std::string &word, int docID, float tf, f
         existingEntry->tfidf = tfidf;
 
         // Debugging information
-        std::cout << "Updated WordEntry for word: " << word << ", DocID: " << docID
-                  << ", TF: " << tf << ", IDF: " << idf 
-                  << ", Index in HashMap: " << index
-                  << ", TF-IDF: " << tfidf << std::endl;
+        // std::cout << "Updated WordEntry for word: " << word << ", DocID: " << docID
+        //           << ", TF: " << tf << ", IDF: " << idf 
+        //           << ", Index in HashMap: " << index
+        //           << ", TF-IDF: " << tfidf << std::endl;
     } else {
         // Handle the case where the entry does not exist
         std::cerr << "Error: WordEntry for word: \"" << word << "\", DocID: " << docID 
@@ -49,7 +50,7 @@ void updateTFIDF(HashMap *index, const std::string &word, int docID, float tf, f
 }
 
 // Indexing function for books
-void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &directory) {
+void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &directory, Serializer &serializer) {
     int docID = 1;  // Start with document ID 1
     std::map<std::string, std::map<int, int>> termFrequency;  // word -> (docID -> count)
     std::map<std::string, int> docFrequency;  // word -> count of documents containing it
@@ -108,6 +109,11 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
 
     // Calculate TF-IDF and update the entries in the hash map
     calculateTFIDF(index, termFrequency, docFrequency, totalDocs);
+
+    // Serialize the HashMap to file after indexing
+    std::string hashFilePath = "index/hashmap.bin";
+
+    serializer.serializeHashMap(index, hashFilePath);
 }
 
 void calculateTFIDF(HashMap *index, 

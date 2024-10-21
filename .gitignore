@@ -4,3 +4,6 @@
 # Ignore executables
 MiniSearchEngine
 MiniSearchEngine.exe
+
+# Ignore binary files
+*.bin

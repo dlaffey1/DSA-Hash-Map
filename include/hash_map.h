@@ -6,6 +6,9 @@
 #include "Vector.h"
 
 #define HASH_MAP_SIZE 100
+
+unsigned int hash(const std::string &key, int size);
+
 struct HashMapNode;
 // Declare TOMBSTONE as an external pointer
 extern HashMapNode* TOMBSTONE;

@@ -3,7 +3,7 @@ CFLAGS = -std=c++17
 INCLUDE = -I./include
 
 # Source files
-SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp src/Vector.cpp
+SOURCES = src/main.cpp src/hash_map.cpp src/trie.cpp src/utils.cpp src/Vector.cpp src/Serializer.cpp
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)
 # Executable name
