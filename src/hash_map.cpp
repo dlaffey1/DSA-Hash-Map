@@ -70,11 +70,10 @@ void initHashMap(HashMap *map) {
 }
 
 bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
-    // Check if the map is effectively full before proceeding
     if (map->size >= map->capacity * 0.7) { 
         std::cerr << "HashMap is effectively full (size: " << map->size <<
          "), resizing..." << std::endl;
-        resizeHashMap(map); // Resize the hash map
+        resizeHashMap(map);
     }
 
     unsigned int index = hash(key, map->capacity);
@@ -103,15 +102,14 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
         // Linear probing: check the next slot
         index = (index + 1) % map->capacity;
 
-        // Check if we have looped back to the start
         if (index == startIndex) {
             std::cerr << "HashMap is full, cannot insert!" << std::endl;
-            return false; // The table is full, failed to insert
+            return false;
         }
     }
 
     // Insert new node if key does not exist
-    HashMapNode *newNode = new HashMapNode; // Allocate new node
+    HashMapNode *newNode = new HashMapNode;
     if (!newNode) {
         std::cerr << "Failed to allocate memory for HashMapNode." << std::endl;
         return false; // Memory allocation failed
@@ -121,10 +119,9 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     newNode->entries.push_back(entry); // Add the WordEntry
     map->table[index] = newNode; // Insert new node in the hash map
     map->size++; // Increment the size of the hash map
-    //std::cout << "Inserting: " << key << " at index: " << index << std::endl;
-        std::cout << "Inserted new Word: " << key
-              << ", DocID: " << entry.docID
-              << " at index: " << index << std::endl;
+        // std::cout << "Inserted new Word: " << key
+        //       << ", DocID: " << entry.docID
+        //       << " at index: " << index << std::endl;
     return true; // Insertion successful
 }
 
@@ -144,7 +141,7 @@ WordEntry* getEntryFromHashMap(HashMap *map, const std::string &key, int docID) 
         }
         index = (index + 1) % map->capacity; // Linear probing, now based on current capacity
         if (index == startIndex) {
-            break;  // We've looped back to the start, no match found
+            break;  //looped back to the start, no match found
         }
     }
 
@@ -224,7 +221,15 @@ void searchWord(HashMap *map, const std::string &query) {
                 intersectionDocIDs = std::move(tempSet);
             }
         }
-
+        // If the intersection is empty, print a message and return
+        if (intersectionDocIDs.empty()) {
+            std::cout << "No documents contain all the words: ";
+            for (const auto &word : includeWords) {
+                std::cout << "'" << word << "' ";
+            }
+            std::cout << std::endl;
+            return;  // Exit the function as no results were found
+        }
         std::cout << "[DEBUG] Intersection document IDs for AND: ";
         for (const int docID : intersectionDocIDs) {
             std::cout << docID << " ";
@@ -297,8 +302,7 @@ void searchWord(HashMap *map, const std::string &query) {
 
                         // Add entry only if it's not excluded and not already in results
                         if (!exclude && docIDs.insert(entry.docID).second) {
-                            results.push_back(entry);
-                            std::cout << "[DEBUG] Adding result for OR: Document ID: " << entry.docID << std::endl;
+                            results.push_back(entry);;
                         }
                     }
                     break; // Stop once the word is found

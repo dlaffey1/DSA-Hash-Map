@@ -1,42 +1,26 @@
 #include <stdio.h>
+#include <string.h>
 #include "hash_map.h"
 #include "trie.h"
 #include "utils.h"
+#include "parser.h"
 #define MAX_QUERY_LENGTH 100
+
 int main() {
     HashMap index;
     Trie autocompleteTrie;
+
+    // Initialize the hash map and trie
     initHashMap(&index);
     initTrie(&autocompleteTrie);
 
     // Index books from the data directory
     indexBooks(&index, &autocompleteTrie, "data");
 
-    // Search for a word
-    char query[MAX_QUERY_LENGTH];
-        printf("Enter a word to search: ");
-        fgets(query, sizeof(query), stdin); // Read the entire line for the query
+    // Use the parser to handle user commands
+    parseCommand(&index, &autocompleteTrie);
 
-        // Remove the newline character if present
-        size_t len = strlen(query);
-        if (len > 0 && query[len - 1] == '\n') {
-            query[len - 1] = '\0'; // Replace newline with null terminator
-        }
-
-    searchWord(&index, query);
-
-    printf("Enter prefix for autocomplete: ");
-    query[0] = '\0'; // Set the first character to null terminator to flush the array
-
-    fgets(query, sizeof(query), stdin);
-
-    len = strlen(query);
-    if (len > 0 && query[len - 1] == '\n') {
-        query[len - 1] = '\0'; 
-    }
-
-    autocomplete(&autocompleteTrie, query); 
-
+    // Free allocated memory
     freeHashMap(&index);
     freeTrie(&autocompleteTrie);
     
