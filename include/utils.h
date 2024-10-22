@@ -4,8 +4,7 @@
 #include <stdio.h>
 #ifdef _WIN32
 #include "dirent.h"  // Use the custom dirent.h for Windows
-#else
-#include <dirent.h>  // Use the standard dirent.h for Linux/macOS
+
 #endif
 #include <string.h>
 #include "hash_map.h"
