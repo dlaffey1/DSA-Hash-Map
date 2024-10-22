@@ -78,7 +78,6 @@ DSA-Hash-Map/
 │   └── Frankenstein_MaryShelley.txt
 |
 ├── include/                 # Header files for public interfaces
-│   ├── dirent.h
 │   ├── hash_map.h
 │   ├── parser.h
 │   ├── Serializer.h
