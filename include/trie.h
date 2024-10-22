@@ -1,5 +1,7 @@
 #ifndef TRIE_H
 #define TRIE_H
+// Function to convert character to index
+int charToIndex(char c);
 
 #include <stdbool.h>
 #include <string>
