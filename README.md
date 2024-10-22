@@ -23,12 +23,15 @@
 ## File Layout
 
 - **utils.cpp**
+
     Contains the indexing for the project and the TF-IDF for all indexed words. This is used later when a word is searched to quickly find the top 10 files with the most occurences of the searched word. 
 
 - **Vector.cpp and Vector.h**
+
     A custom implementation of the vector class, used throughout most of the project files.
 
 - **Hashmap.cpp and HashMap.h**
+
     This file contains the structure for word entries, which includes:
     ```cpp
         int docID;
@@ -40,17 +43,29 @@
     ```
     It also implements a separate chaining hashmap structure.
 
-- **Trie.cpp and Trie.h** 
+- **trie.cpp and trie.h** 
+
     Contains the logic for initiating, inserting, and facilitating autocomplete using the trie data structure.
 
 - **main.cpp**
-    The root directory that runs the parser.
+
+    The root directory that runs the parser and looks for the serialized data structures in the "index" folder. If they exist, they're deserialized and used, else the text files in the "data" folder will be indexed.
 
 - **parser.cpp**
+
     Handles all commands and serves as a CLI for the user to utilize the search and autocomplete features.
 
 - **Vector_test.cpp**
+
     Testing for the Vector class.
+
+- **extensive_tests.cpp**
+
+    Testing for the whole project.
+
+- **Serializer.cpp and Serializer.h**
+
+    Contains the serialization and deserialization logic for both the HashMap and Trie data structures.
 
 
 ## Folder Structure
