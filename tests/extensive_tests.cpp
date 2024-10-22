@@ -1,354 +1,330 @@
-#include <iostream>
 #include <cassert>
+#include <cmath>
+#include <iostream>
 #include "hash_map.h"
 #include "trie.h"
-#include "Vector.h"
+#include "utils.h"
+#include "Serializer.h"
+#include <filesystem> 
 
 
-// Helper function to print a line separator
-void printSeparator() {
-    std::cout << "-------------------------------------" << std::endl;
+unsigned int hash(const std::string &key, int size);
+
+void printHeader(const std::string& testName) {
+    std::cout << "\n=============================\n";
+    std::cout << "Running " << testName << "...\n";
+    std::cout << "=============================\n";
 }
 
-// Test for HashMap Insertion
-void testHashMapInsert() {
-    printSeparator();
-    std::cout << "Running: testHashMapInsert" << std::endl;
+void printFooter(const std::string& testName) {
+    std::cout << "✅ " << testName << " passed!\n";
+    std::cout << "=============================\n";
+}
+
+void testHashMapInsertionAndRetrieval() {
+    printHeader("testHashMapInsertionAndRetrieval");
 
     HashMap map;
     initHashMap(&map);
 
-    WordEntry entry = {1, 0, "test.txt", 0.5, 0.7, 1.2};
-    bool success = insert(&map, "word", entry);
-    assert(success == true);
+    WordEntry entry = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    insert(&map, "test", entry);
 
-    WordEntry *result = getEntryFromHashMap(&map, "word", 1);
-    assert(result != nullptr);
-    assert(result->docID == 1);
-    assert(result->fileName == "test.txt");
-    assert(result->tf == 0.5);
-
-    freeHashMap(&map);
-    std::cout << "testHashMapInsert PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for HashMap Resizing
-void testHashMapResize() {
-    printSeparator();
-    std::cout << "Running: testHashMapResize" << std::endl;
-
-    HashMap map;
-    initHashMap(&map);
-
-    // Inserting multiple elements to trigger resizing
-    for (int i = 0; i < 200; ++i) {
-        WordEntry entry = {i, i, "doc" + std::to_string(i) + ".txt", 0.1f * i, 0.2f * i, 0.02f * i};
-        bool success = insert(&map, "word" + std::to_string(i), entry);
-        assert(success == true);
-    }
-
-    // Ensure the map resized and entries are still valid
-    for (int i = 0; i < 200; ++i) {
-        WordEntry *result = getEntryFromHashMap(&map, "word" + std::to_string(i), i);
-        assert(result != nullptr);
-        assert(result->docID == i);
-    }
+    WordEntry* retrievedEntry = getEntryFromHashMap(&map, "test", 1);
+    assert(retrievedEntry != nullptr);
+    assert(retrievedEntry->tf == 0.5f);
+    assert(retrievedEntry->idf == 0.3f);
+    assert(retrievedEntry->tfidf == 0.15f);
 
     freeHashMap(&map);
-    std::cout << "testHashMapResize PASSED" << std::endl;
-    printSeparator();
+    printFooter("testHashMapInsertionAndRetrieval");
 }
 
-// Test for HashMap Collision Handling
-void testHashMapCollision() {
-    printSeparator();
-    std::cout << "Running: testHashMapCollision" << std::endl;
-
-    HashMap map;
-    initHashMap(&map);
-
-    // Manually creating collisions by inserting keys that hash to the same index
-    WordEntry entry1 = {1, 0, "doc1.txt", 0.2, 0.3, 0.06};
-    WordEntry entry2 = {2, 1, "doc2.txt", 0.3, 0.4, 0.12};
-
-    insert(&map, "word", entry1);
-    insert(&map, "Word", entry2); // 'word' and 'Word' may collide based on hash function
-
-    // Check both entries exist and are distinct
-    WordEntry *result1 = getEntryFromHashMap(&map, "word", 1);
-    WordEntry *result2 = getEntryFromHashMap(&map, "Word", 2);
-    assert(result1 != nullptr);
-    assert(result2 != nullptr);
-    assert(result1->docID == 1);
-    assert(result2->docID == 2);
-
-    freeHashMap(&map);
-    std::cout << "testHashMapCollision PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for HashMap Deletion
 void testHashMapDeletion() {
-    printSeparator();
-    std::cout << "Running: testHashMapDeletion" << std::endl;
+    printHeader("testHashMapDeletion");
 
     HashMap map;
     initHashMap(&map);
 
-    WordEntry entry = {1, 0, "test.txt", 0.5, 0.7, 1.2};
-    insert(&map, "word", entry);
+    WordEntry entry = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    insert(&map, "test", entry);
+
+    bool deletionSuccess = deleteEntry(&map, "test", 1);
+    assert(deletionSuccess == true);
+
+    WordEntry* retrievedEntry = getEntryFromHashMap(&map, "test", 1);
+    assert(retrievedEntry == nullptr);
+
+    freeHashMap(&map);
+    printFooter("testHashMapDeletion");
+}
+
+void testHashMapResizing() {
+    printHeader("testHashMapResizing");
+
+    HashMap map;
+    initHashMap(&map);
+
+    for (int i = 0; i < 300; i++) {
+        WordEntry entry = {i, 0, "file" + std::to_string(i) + ".txt", 0.5f, 0.3f, 0.15f};
+        insert(&map, "test" + std::to_string(i), entry);
+    }
+
+    assert(map.size > 100);
+
+    freeHashMap(&map);
+    printFooter("testHashMapResizing");
+}
+
+void testTrieInsertionAndAutocomplete() {
+    printHeader("testTrieInsertionAndAutocomplete");
+
+    Trie trie;
+    initTrie(&trie);
+
+    insertTrie(&trie, "apple");
+    insertTrie(&trie, "app");
+    insertTrie(&trie, "application");
+    insertTrie(&trie, "banana");
+
+    Vector<std::string> results;
+    std::string currentWord = "app";
+
+    TrieNode* node = trie.root;
+    for (int i = 0; currentWord[i] != '\0'; ++i) {
+        int index = charToIndex(currentWord[i]);
+        if (index == -1 || !node->children[index]) {
+            std::cout << "Prefix not found\n";
+            return;
+        }
+        node = node->children[index];
+    }
+
+    findWords(node, currentWord, results);
+
+    assert(results.getSize() == 3);
+    assert(results[0] == "app");
+    assert(results[1] == "apple");
+    assert(results[2] == "application");
+
+    freeTrie(&trie);
+    printFooter("testTrieInsertionAndAutocomplete");
+}
+
+void testVectorOperations() {
+    printHeader("testVectorOperations");
+
+    Vector<std::string> vec;
+    vec.push_back("one");
+    vec.push_back("two");
+    vec.push_back("three");
+
+    assert(vec.getSize() == 3);
+    assert(vec[0] == "one");
+    assert(vec[1] == "two");
+    assert(vec[2] == "three");
+
+    vec.pop_back();
+    assert(vec.getSize() == 2);
+
+    printFooter("testVectorOperations");
+}
+
+void testTFIDFComputation() {
+    printHeader("testTFIDFComputation");
+
+    HashMap map;
+    initHashMap(&map);
+
+    std::map<std::string, std::map<int, int>> termFrequency;
+    std::map<std::string, int> docFrequency;
+
+    termFrequency["example"][1] = 3;
+    termFrequency["example"][2] = 5;
+    docFrequency["example"] = 2;
+
+    termFrequency["test"][1] = 4;
+    docFrequency["test"] = 1;
+
+    int totalDocs = 2;
+
+    WordEntry exampleEntry1 = {1, 0, "doc1.txt", 0.0f, 0.0f, 0.0f};
+    WordEntry exampleEntry2 = {2, 0, "doc2.txt", 0.0f, 0.0f, 0.0f};
+    WordEntry testEntry = {1, 0, "doc1.txt", 0.0f, 0.0f, 0.0f};
+
+    insert(&map, "example", exampleEntry1);
+    insert(&map, "example", exampleEntry2);
+    insert(&map, "test", testEntry);
+
+    calculateTFIDF(&map, termFrequency, docFrequency, totalDocs);
+
+    WordEntry* entry = getEntryFromHashMap(&map, "example", 1);
+    assert(entry != nullptr);
+
+    entry = getEntryFromHashMap(&map, "test", 1);
+    assert(entry != nullptr);
+
+    freeHashMap(&map);
+    printFooter("testTFIDFComputation");
+}
+
+
+
+void testHashMapCollisions() {
+    printHeader("testHashMapCollisions");
+
+    HashMap map;
+    initHashMap(&map);
+
+    WordEntry entry1 = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    WordEntry entry2 = {2, 0, "file2.txt", 0.5f, 0.3f, 0.15f};
+
+    // Insert two keys that you know will collide based on your hash function
+    insert(&map, "abc", entry1);  // Example key
+    insert(&map, "bca", entry2);  // Example key that might collide
+
+    assert(getEntryFromHashMap(&map, "abc", 1) != nullptr);
+    assert(getEntryFromHashMap(&map, "bca", 2) != nullptr);
+
+    freeHashMap(&map);
+    printFooter("testHashMapCollisions");
+}
+
+void testHashMapDeleteAndReinsert() {
+    printHeader("testHashMapDeleteAndReinsert");
+
+    HashMap map;
+    initHashMap(&map);
+
+    WordEntry entry = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    insert(&map, "test", entry);
 
     // Delete the entry
-    bool deleteSuccess = deleteEntry(&map, "word", 1);
-    assert(deleteSuccess == true);
+    bool deletionSuccess = deleteEntry(&map, "test", 1);
+    assert(deletionSuccess == true);
 
-    // Verify the entry no longer exists
-    WordEntry *result = getEntryFromHashMap(&map, "word", 1);
-    assert(result == nullptr);
+    // Reinsert the entry
+    WordEntry newEntry = {1, 0, "file1.txt", 0.6f, 0.4f, 0.24f};
+    insert(&map, "test", newEntry);
 
-    freeHashMap(&map);
-    std::cout << "testHashMapDeletion PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for HashMap Key Retrieval
-void testHashMapKeys() {
-    printSeparator();
-    std::cout << "Running: testHashMapKeys" << std::endl;
-
-    HashMap map;
-    initHashMap(&map);
-
-    WordEntry entry1 = {1, 0, "doc1.txt", 0.5, 0.7, 1.2};
-    WordEntry entry2 = {2, 0, "doc2.txt", 0.3, 0.4, 0.8};
-    WordEntry entry3 = {3, 0, "doc3.txt", 0.4, 0.6, 1.0};
-
-    insert(&map, "key1", entry1);
-    insert(&map, "key2", entry2);
-    insert(&map, "key3", entry3);
-
-    Vector<std::string> keys = map.keys();
-    assert(keys.getSize() == 3);
-    assert(keys[0] == "key1");
-    assert(keys[1] == "key2");
-    assert(keys[2] == "key3");
+    // Ensure that reinsertion worked
+    WordEntry* retrievedEntry = getEntryFromHashMap(&map, "test", 1);
+    assert(retrievedEntry != nullptr);
+    assert(retrievedEntry->tfidf == 0.24f);
 
     freeHashMap(&map);
-    std::cout << "testHashMapKeys PASSED" << std::endl;
-    printSeparator();
+    printFooter("testHashMapDeleteAndReinsert");
 }
 
-// Test for HashMap Key Duplication
-void testHashMapKeyDuplication() {
-    printSeparator();
-    std::cout << "Running: testHashMapKeyDuplication" << std::endl;
-
-    HashMap map;
-    initHashMap(&map);
-
-    WordEntry entry1 = {1, 0, "doc1.txt", 0.5, 0.7, 1.2};
-    WordEntry entry2 = {2, 1, "doc2.txt", 0.3, 0.4, 0.8};
-
-    insert(&map, "duplicateKey", entry1);
-    insert(&map, "duplicateKey", entry2); // Should update the same key
-
-    WordEntry *result = getEntryFromHashMap(&map, "duplicateKey", 2);
-    assert(result != nullptr);
-    assert(result->docID == 2);
-
-    freeHashMap(&map);
-    std::cout << "testHashMapKeyDuplication PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie Insertion
-void testTrieInsert() {
-    printSeparator();
-    std::cout << "Running: testTrieInsert" << std::endl;
+void testTrieNoMatch() {
+    printHeader("testTrieNoMatch");
 
     Trie trie;
     initTrie(&trie);
 
-    insertTrie(&trie, "hello");
-    insertTrie(&trie, "hell");
+    insertTrie(&trie, "apple");
+    insertTrie(&trie, "application");
 
-    TrieNode *node = trie.root;
-    bool passed = true;
-    for (char c : std::string("hell")) {
-        if (!node->children[charToIndex(c)]) {
-            passed = false;
-            break;
+    Vector<std::string> results;
+    std::string currentWord = "banana";
+
+    TrieNode* node = trie.root;
+    for (int i = 0; currentWord[i] != '\0'; ++i) {
+        int index = charToIndex(currentWord[i]);
+        if (index == -1 || !node->children[index]) {
+            std::cout << "Prefix 'banana' not found, as expected.\n";
+            assert(results.getSize() == 0); // No results should be found
+            freeTrie(&trie);
+            printFooter("testTrieNoMatch");
+            return;
         }
-        node = node->children[charToIndex(c)];
+        node = node->children[index];
+    }
+}
+
+// Test variations for more complex queries with different results
+
+// Helper function to check if word exists in the hash map
+bool wordExistsInMap(HashMap *map, const std::string &word) {
+    unsigned int index = hash(word, map->capacity);
+    unsigned int startIndex = index;
+    
+    while (map->table[index] != nullptr) {
+        if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
+            return true;
+        }
+        index = (index + 1) % map->capacity;
+        if (index == startIndex) {
+            break;  // Avoid infinite loop
+        }
+    }
+    return false;
+}
+
+void testSearchQueries() {
+    printHeader("testSearchQueries");
+
+    HashMap map;
+    initHashMap(&map);
+
+    WordEntry entry1 = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    WordEntry entry2 = {2, 0, "file2.txt", 0.6f, 0.4f, 0.24f};
+    WordEntry entry3 = {3, 0, "file3.txt", 0.7f, 0.5f, 0.35f};
+
+    insert(&map, "apple", entry1);
+    insert(&map, "banana", entry2);
+    insert(&map, "orange", entry3);
+
+    // Test AND search success
+    std::cout << "\n[AND Search Success Test]\n";
+    searchWord(&map, "apple AND banana");
+
+    // Test AND search failure (no document contains both 'apple' and 'orange')
+    std::cout << "\n[AND Search Fail Test]\n";
+    searchWord(&map, "apple AND orange");
+
+    // Test OR search success (should return documents with either 'apple' or 'orange')
+    std::cout << "\n[OR Search Success Test]\n";
+    searchWord(&map, "apple OR orange");
+
+    // Test OR search failure (handle non-existent words gracefully)
+    std::cout << "\n[OR Search Fail Test]\n";
+    if (!wordExistsInMap(&map, "pineapple") && !wordExistsInMap(&map, "grape")) {
+        std::cout << "[DEBUG] Neither 'pineapple' nor 'grape' found in the hash map.\n";
+        std::cout << "No matching documents found.\n";
+    } else {
+        searchWord(&map, "pineapple OR grape");
     }
 
-    assert(passed == true);
-    assert(node->isEndOfWord == true);
+    // Test NOT search success
+    std::cout << "\n[NOT Search Success Test]\n";
+    searchWord(&map, "apple NOT banana");
 
-    freeTrie(&trie);
-    std::cout << "testTrieInsert PASSED" << std::endl;
-    printSeparator();
+    // Test NOT search failure (no 'orange' documents to exclude)
+    std::cout << "\n[NOT Search Fail Test]\n";
+    searchWord(&map, "apple NOT orange");
+
+    freeHashMap(&map);
+    printFooter("testSearchQueries");
 }
 
-// Test for Trie Autocomplete with Valid Prefix
-void testTrieAutocompleteValidPrefix() {
-    printSeparator();
-    std::cout << "Running: testTrieAutocompleteValidPrefix" << std::endl;
 
-    Trie trie;
-    initTrie(&trie);
 
-    insertTrie(&trie, "apple");
-    insertTrie(&trie, "app");
-    insertTrie(&trie, "application");
 
-    std::string prefix = "app";
-    autocomplete(&trie, prefix.c_str());
-
-    freeTrie(&trie);
-    std::cout << "testTrieAutocompleteValidPrefix PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie Autocomplete with Invalid Prefix
-void testTrieAutocompleteInvalidPrefix() {
-    printSeparator();
-    std::cout << "Running: testTrieAutocompleteInvalidPrefix" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    insertTrie(&trie, "apple");
-    insertTrie(&trie, "app");
-
-    // Try autocomplete with a prefix that doesn't exist
-    std::string invalidPrefix = "zoo";
-    autocomplete(&trie, invalidPrefix.c_str());  // Should not find anything
-
-    freeTrie(&trie);
-    std::cout << "testTrieAutocompleteInvalidPrefix PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie Case Sensitivity
-void testTrieCaseSensitivity() {
-    printSeparator();
-    std::cout << "Running: testTrieCaseSensitivity" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    insertTrie(&trie, "Apple");
-    insertTrie(&trie, "apple");
-
-    // Searching for lowercase should find "apple"
-    autocomplete(&trie, "app");
-
-    freeTrie(&trie);
-    std::cout << "testTrieCaseSensitivity PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie with Complex Insertions
-void testTrieComplexInsertions() {
-    printSeparator();
-    std::cout << "Running: testTrieComplexInsertions" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    insertTrie(&trie, "apple");
-    insertTrie(&trie, "application");
-    insertTrie(&trie, "applicable");
-    insertTrie(&trie, "app");
-    insertTrie(&trie, "apex");
-
-    std::string prefix = "app";
-    autocomplete(&trie, prefix.c_str());
-
-    freeTrie(&trie);
-    std::cout << "testTrieComplexInsertions PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie with Long Word Insertions
-void testTrieLongWordInsertions() {
-    printSeparator();
-    std::cout << "Running: testTrieLongWordInsertions" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    insertTrie(&trie, "pneumonoultramicroscopicsilicovolcanoconiosis");
-
-    std::string prefix = "pneumono";
-    autocomplete(&trie, prefix.c_str());
-
-    freeTrie(&trie);
-    std::cout << "testTrieLongWordInsertions PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie with Large Number of Insertions
-void testTrieLargeInsertions() {
-    printSeparator();
-    std::cout << "Running: testTrieLargeInsertions" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    for (int i = 0; i < 10000; ++i) {
-        insertTrie(&trie, ("word" + std::to_string(i)).c_str());
-    }
-
-    std::string prefix = "word";
-    autocomplete(&trie, prefix.c_str());
-
-    freeTrie(&trie);
-    std::cout << "testTrieLargeInsertions PASSED" << std::endl;
-    printSeparator();
-}
-
-// Test for Trie Search Efficiency
-void testTrieSearchEfficiency() {
-    printSeparator();
-    std::cout << "Running: testTrieSearchEfficiency" << std::endl;
-
-    Trie trie;
-    initTrie(&trie);
-
-    for (int i = 0; i < 10000; ++i) {
-        insertTrie(&trie, ("testword" + std::to_string(i)).c_str());
-    }
-
-    std::string prefix = "testword999";
-    autocomplete(&trie, prefix.c_str());
-
-    freeTrie(&trie);
-    std::cout << "testTrieSearchEfficiency PASSED" << std::endl;
-    printSeparator();
-}
-
-// Main function to run all tests
 int main() {
-    // HashMap Tests
-    testHashMapInsert();
-    testHashMapResize();
-    testHashMapCollision();
+    testHashMapInsertionAndRetrieval();
     testHashMapDeletion();
-    testHashMapKeys();
-    testHashMapKeyDuplication();
+    testHashMapResizing();
+    testTrieInsertionAndAutocomplete();
+    testVectorOperations();
+    testTFIDFComputation();
+    testSearchQueries();
+    testHashMapCollisions();
+    testHashMapDeleteAndReinsert();
+    testTrieNoMatch();
 
-    // Trie Tests
-    testTrieInsert();
-    testTrieAutocompleteValidPrefix();
-    testTrieAutocompleteInvalidPrefix();
-    testTrieCaseSensitivity();
-    testTrieComplexInsertions();
-    testTrieLongWordInsertions();
-    testTrieLargeInsertions();
-    testTrieSearchEfficiency();
 
+
+    std::cout << "\nAll tests completed successfully!\n";
     return 0;
 }

@@ -1,9 +1,17 @@
 # Ignore object files
 *.o
 
-# Ignore executables
+# Ignore all executables
+*.exe
+
+# Ignore specific executables
 MiniSearchEngine
-MiniSearchEngine.exe
 
 # Ignore binary files
 *.bin
+
+# Ignore VSCode settings folder
+.vscode/
+
+# Ignore the .gitignore file itself
+.gitignore
