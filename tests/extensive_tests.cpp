@@ -350,6 +350,82 @@ void testSearchVariations() {
     printFooter("testSearchVariations");
 }
 
+void cleanupSerializedTestFiles() {
+    std::filesystem::remove("test_index/hashmap.bin");
+    std::filesystem::remove("test_index/trie.bin");
+    std::filesystem::remove("test_index");
+}
+
+
+void testSerializationDeserialization() {
+    printHeader("testSerializationDeserialization");
+
+    // Initialize and populate HashMap and Trie
+    HashMap map;
+    initHashMap(&map);
+    Trie trie;
+    initTrie(&trie);
+    Serializer serializer;
+
+    WordEntry entry1 = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    WordEntry entry2 = {2, 0, "file2.txt", 0.6f, 0.4f, 0.24f};
+
+    insert(&map, "apple", entry1);
+    insert(&map, "banana", entry2);
+    insertTrie(&trie, "apple");
+    insertTrie(&trie, "banana");
+
+    // Use test-specific directory and file paths
+    std::filesystem::create_directory("test_index");
+    std::string hashFilePath = "test_index/hashmap.bin";
+    std::string trieFilePath = "test_index/trie.bin";
+
+    // Serialize both HashMap and Trie to test-specific paths
+    serializer.serializeHashMap(&map, hashFilePath);
+    serializer.serializeTrie(&trie, trieFilePath);
+
+    // Clean the original structures before deserialization
+    freeHashMap(&map);
+    freeTrie(&trie);
+
+    // Reinitialize the structures to hold deserialized data
+    initHashMap(&map);
+    initTrie(&trie);
+
+    // Deserialize both HashMap and Trie from test-specific paths
+    serializer.deserializeHashMap(&map, hashFilePath);
+    serializer.deserializeTrie(&trie, trieFilePath);
+
+    // Validate that the deserialized HashMap contains the expected entries
+    WordEntry* retrievedEntry1 = getEntryFromHashMap(&map, "apple", 1);
+    WordEntry* retrievedEntry2 = getEntryFromHashMap(&map, "banana", 2);
+    assert(retrievedEntry1 != nullptr);
+    assert(retrievedEntry2 != nullptr);
+    assert(retrievedEntry1->tfidf == 0.15f);
+    assert(retrievedEntry2->tfidf == 0.24f);
+
+    // Validate that the Trie has the expected words
+    Vector<std::string> results;
+    std::string prefix = "apple";
+    TrieNode* node = trie.root;
+    for (char c : prefix) {
+        int index = charToIndex(c);
+        if (node->children[index]) {
+            node = node->children[index];
+        }
+    }
+    findWords(node, prefix, results);
+    assert(results.getSize() > 0);
+    assert(results[0] == "apple");
+
+    // Clean up
+    freeHashMap(&map);
+    freeTrie(&trie);
+    cleanupSerializedTestFiles();
+
+    printFooter("testSerializationDeserialization");
+}
+
 
 int main() {
     testHashMapInsertionAndRetrieval();
@@ -363,7 +439,7 @@ int main() {
     testHashMapDeleteAndReinsert();
     testTrieNoMatch();
     testSearchVariations();
-
+    testSerializationDeserialization();
 
     std::cout << "\nAll tests completed successfully!\n";
     return 0;
