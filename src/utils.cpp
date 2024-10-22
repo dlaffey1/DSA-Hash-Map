@@ -110,10 +110,12 @@ void indexBooks(HashMap *index, Trie *autocompleteTrie, const std::string &direc
     // Calculate TF-IDF and update the entries in the hash map
     calculateTFIDF(index, termFrequency, docFrequency, totalDocs);
 
-    // Serialize the HashMap to file after indexing
+    // Serialize the HashMap and Trie after indexing
     std::string hashFilePath = "index/hashmap.bin";
+    std::string trieFilePath = "index/trie.bin";
 
     serializer.serializeHashMap(index, hashFilePath);
+    serializer.serializeTrie(autocompleteTrie, trieFilePath);
 }
 
 void calculateTFIDF(HashMap *index, 

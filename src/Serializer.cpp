@@ -1,3 +1,5 @@
+// Used: https://www.geeksforgeeks.org/serialize-and-deserialize-an-object-in-cpp/
+
 #include "Serializer.h"
 
 #include <iostream>
@@ -5,45 +7,51 @@
 #include <filesystem>
 #include "hash_map.h"
 
-void Serializer::serializeHashMap(const HashMap *map, const std::string &filename) {
+void Serializer::serializeHashMap(const HashMap *map, const std::string &filename)
+{
     std::string directory = "index";
-    if (!std::filesystem::exists(directory)) {
+    if (!std::filesystem::exists(directory))
+    {
         std::filesystem::create_directory(directory);
     }
-    
+
     std::ofstream file(filename, std::ios::out | std::ios::binary);
-    if (!file) {
+    if (!file)
+    {
         std::cerr << "Error: Unable to open file for serialization: " << filename << std::endl;
         return;
     }
 
-    file.write(reinterpret_cast<const char*>(&map->capacity), sizeof(map->capacity));
+    file.write(reinterpret_cast<const char *>(&map->capacity), sizeof(map->capacity));
 
-    for (size_t i = 0; i < map->capacity; ++i) {
-        if (map->table[i] != nullptr && map->table[i] != TOMBSTONE) {
+    for (size_t i = 0; i < map->capacity; ++i)
+    {
+        if (map->table[i] != nullptr && map->table[i] != TOMBSTONE)
+        {
             // Serialize the key
             size_t keySize = map->table[i]->key.size();
-            file.write(reinterpret_cast<const char*>(&keySize), sizeof(keySize));
+            file.write(reinterpret_cast<const char *>(&keySize), sizeof(keySize));
             file.write(map->table[i]->key.data(), keySize);
 
             // Serialize the number of WordEntries
             size_t entriesSize = map->table[i]->entries.getSize();
-            file.write(reinterpret_cast<const char*>(&entriesSize), sizeof(entriesSize));
+            file.write(reinterpret_cast<const char *>(&entriesSize), sizeof(entriesSize));
 
             // Serialize the WordEntries
-            for (size_t j = 0; j < entriesSize; ++j) {
+            for (size_t j = 0; j < entriesSize; ++j)
+            {
                 WordEntry entry = map->table[i]->entries[j];
-                file.write(reinterpret_cast<const char*>(&entry.docID), sizeof(entry.docID));
-                file.write(reinterpret_cast<const char*>(&entry.position), sizeof(entry.position));
+                file.write(reinterpret_cast<const char *>(&entry.docID), sizeof(entry.docID));
+                file.write(reinterpret_cast<const char *>(&entry.position), sizeof(entry.position));
 
                 // Serialize fileName (as string)
                 size_t fileNameSize = entry.fileName.size();
-                file.write(reinterpret_cast<const char*>(&fileNameSize), sizeof(fileNameSize));
+                file.write(reinterpret_cast<const char *>(&fileNameSize), sizeof(fileNameSize));
                 file.write(entry.fileName.data(), fileNameSize);
 
-                file.write(reinterpret_cast<const char*>(&entry.tf), sizeof(entry.tf));
-                file.write(reinterpret_cast<const char*>(&entry.idf), sizeof(entry.idf));
-                file.write(reinterpret_cast<const char*>(&entry.tfidf), sizeof(entry.tfidf));
+                file.write(reinterpret_cast<const char *>(&entry.tf), sizeof(entry.tf));
+                file.write(reinterpret_cast<const char *>(&entry.idf), sizeof(entry.idf));
+                file.write(reinterpret_cast<const char *>(&entry.tfidf), sizeof(entry.tfidf));
             }
         }
     }
@@ -52,47 +60,51 @@ void Serializer::serializeHashMap(const HashMap *map, const std::string &filenam
     std::cout << "HashMap successfully serialized to file: " << filename << std::endl;
 }
 
-void Serializer::deserializeHashMap(HashMap *map, const std::string &filename) {
+void Serializer::deserializeHashMap(HashMap *map, const std::string &filename)
+{
     std::ifstream file(filename, std::ios::in | std::ios::binary);
-    if (!file) {
+    if (!file)
+    {
         std::cerr << "Error: Unable to open file for deserialization: " << filename << std::endl;
         return;
     }
 
-    file.read(reinterpret_cast<char*>(&map->capacity), sizeof(map->capacity));
+    file.read(reinterpret_cast<char *>(&map->capacity), sizeof(map->capacity));
 
-    map->table = new HashMapNode*[map->capacity]();
+    map->table = new HashMapNode *[map->capacity]();
     map->size = 0;
 
-    while (file.peek() != EOF) {
+    while (file.peek() != EOF)
+    {
         size_t keySize;
-        file.read(reinterpret_cast<char*>(&keySize), sizeof(keySize));
+        file.read(reinterpret_cast<char *>(&keySize), sizeof(keySize));
         std::string key(keySize, ' ');
         file.read(&key[0], keySize);
 
         // Deserialize the number of WordEntries
         size_t entriesSize;
-        file.read(reinterpret_cast<char*>(&entriesSize), sizeof(entriesSize));
+        file.read(reinterpret_cast<char *>(&entriesSize), sizeof(entriesSize));
 
         // Create a new HashMapNode for this key
         HashMapNode *node = new HashMapNode;
         node->key = key;
 
         // Deserialize the WordEntries
-        for (size_t i = 0; i < entriesSize; ++i) {
+        for (size_t i = 0; i < entriesSize; ++i)
+        {
             WordEntry entry;
-            file.read(reinterpret_cast<char*>(&entry.docID), sizeof(entry.docID));
-            file.read(reinterpret_cast<char*>(&entry.position), sizeof(entry.position));
+            file.read(reinterpret_cast<char *>(&entry.docID), sizeof(entry.docID));
+            file.read(reinterpret_cast<char *>(&entry.position), sizeof(entry.position));
 
             // Deserialize fileName (as string)
             size_t fileNameSize;
-            file.read(reinterpret_cast<char*>(&fileNameSize), sizeof(fileNameSize));
+            file.read(reinterpret_cast<char *>(&fileNameSize), sizeof(fileNameSize));
             entry.fileName.resize(fileNameSize);
             file.read(&entry.fileName[0], fileNameSize);
 
-            file.read(reinterpret_cast<char*>(&entry.tf), sizeof(entry.tf));
-            file.read(reinterpret_cast<char*>(&entry.idf), sizeof(entry.idf));
-            file.read(reinterpret_cast<char*>(&entry.tfidf), sizeof(entry.tfidf));
+            file.read(reinterpret_cast<char *>(&entry.tf), sizeof(entry.tf));
+            file.read(reinterpret_cast<char *>(&entry.idf), sizeof(entry.idf));
+            file.read(reinterpret_cast<char *>(&entry.tfidf), sizeof(entry.tfidf));
 
             // Add the WordEntry to the node
             node->entries.push_back(entry);
@@ -100,7 +112,8 @@ void Serializer::deserializeHashMap(HashMap *map, const std::string &filename) {
 
         // Insert the node into the HashMap
         unsigned int index = hash(key, map->capacity);
-        while (map->table[index] != nullptr && map->table[index] != TOMBSTONE) {
+        while (map->table[index] != nullptr && map->table[index] != TOMBSTONE)
+        {
             index = (index + 1) % map->capacity;
         }
         map->table[index] = node;
@@ -108,4 +121,74 @@ void Serializer::deserializeHashMap(HashMap *map, const std::string &filename) {
     }
     file.close();
     std::cout << "HashMap successfully deserialized from file: " << filename << std::endl;
+}
+
+void Serializer::serializeTrie(const Trie *trie, const std::string &filename)
+{
+    std::ofstream file(filename, std::ios::binary);
+    if (!file)
+    {
+        std::cerr << "Error: Unable to open file for serialization: " << filename << std::endl;
+        return;
+    }
+
+    serializeTrieNode(file, trie->root);
+    file.close();
+    std::cout << "Trie successfully serialized to file: " << filename << std::endl;
+}
+
+void Serializer::serializeTrieNode(std::ofstream &file, TrieNode *node)
+{
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    file.write(reinterpret_cast<const char *>(&node->isEndOfWord), sizeof(node->isEndOfWord));
+
+    for (int i = 0; i < ALPHABET_SIZE; ++i)
+    {
+        bool hasChild = (node->children[i] != nullptr);
+        file.write(reinterpret_cast<const char *>(&hasChild), sizeof(hasChild));
+        if (hasChild)
+        {
+            serializeTrieNode(file, node->children[i]);
+        }
+    }
+}
+
+void Serializer::deserializeTrie(Trie *trie, const std::string &filename)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file)
+    {
+        std::cerr << "Error: Unable to open file for deserialization: " << filename << std::endl;
+        return;
+    }
+
+    trie->root = deserializeTrieNode(file);
+    file.close();
+    std::cout << "Trie successfully deserialized from file: " << filename << std::endl;
+}
+
+TrieNode* Serializer::deserializeTrieNode(std::ifstream &file)
+{
+    TrieNode *node = new TrieNode;
+
+    file.read(reinterpret_cast<char *>(&node->isEndOfWord), sizeof(node->isEndOfWord));
+
+    for (int i = 0; i < ALPHABET_SIZE; ++i)
+    {
+        bool hasChild;
+        file.read(reinterpret_cast<char *>(&hasChild), sizeof(hasChild));
+        if (hasChild)
+        {
+            node->children[i] = deserializeTrieNode(file);
+        }
+        else {
+            node->children[i] = nullptr;
+        }
+    }
+
+    return node;
 }

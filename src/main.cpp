@@ -16,14 +16,18 @@ int main() {
     initTrie(&autocompleteTrie);
 
     std::string hashFilePath = "index/hashmap.bin";
+    std::string trieFilePath = "index/trie.bin";
 
     std::ifstream hashmapFile(hashFilePath, std::ios::binary);
+    std::ifstream trieFile(trieFilePath, std::ios::binary);
 
     std::cout << "hashmapFile.good() " << hashmapFile.good() << std::endl;
+    std::cout << "trieFile.good() " << trieFile.good() << std::endl;
 
-    if (hashmapFile.good()) {
-        std::cout << "Loading existing index and trie from file..." << std::endl;
+    if (hashmapFile.good() && trieFile.good()) {
+        std::cout << "Loading existing hashmap and trie from file..." << std::endl;
         serializer.deserializeHashMap(&index, hashFilePath);
+        serializer.deserializeTrie(&autocompleteTrie, trieFilePath);
     } else {
         // Index books from the data directory
         std::cout << "Index file not found. Indexing textbooks..." << std::endl;
