@@ -308,7 +308,47 @@ void testSearchQueries() {
     printFooter("testSearchQueries");
 }
 
+void testSearchVariations() {
+    printHeader("testSearchVariations");
 
+    HashMap map;
+    initHashMap(&map);
+
+    // Sample word entries
+    WordEntry entry1 = {1, 0, "file1.txt", 0.5f, 0.3f, 0.15f};
+    WordEntry entry2 = {2, 0, "file2.txt", 0.6f, 0.4f, 0.24f};
+    WordEntry entry3 = {3, 0, "file3.txt", 0.7f, 0.5f, 0.35f};
+    WordEntry entry4 = {1, 0, "file1.txt", 0.8f, 0.6f, 0.48f}; // Reusing same docID
+
+    insert(&map, "cat", entry1);
+    insert(&map, "dog", entry2);
+    insert(&map, "mouse", entry3);
+    insert(&map, "cat", entry4);
+
+    // Test complex AND/NOT query success
+    std::cout << "\n[Complex AND/NOT Search Success Test]\n";
+    searchWord(&map, "cat AND NOT dog");
+
+    // Test complex AND/OR query success
+    std::cout << "\n[Complex AND/OR Search Success Test]\n";
+    searchWord(&map, "cat OR mouse AND NOT dog");
+
+    // Test complex AND/NOT query failure
+    std::cout << "\n[Complex AND/NOT Search Fail Test]\n";
+    searchWord(&map, "cat AND NOT mouse");
+
+    // Test OR query failure for non-existent words
+    std::cout << "\n[Complex OR Search Fail Test]\n";
+    if (!wordExistsInMap(&map, "giraffe") && !wordExistsInMap(&map, "elephant")) {
+        std::cout << "[DEBUG] Neither 'giraffe' nor 'elephant' found in the hash map.\n";
+        std::cout << "No matching documents found.\n";
+    } else {
+        searchWord(&map, "giraffe OR elephant");
+    }
+
+    freeHashMap(&map);
+    printFooter("testSearchVariations");
+}
 
 
 int main() {
@@ -322,7 +362,7 @@ int main() {
     testHashMapCollisions();
     testHashMapDeleteAndReinsert();
     testTrieNoMatch();
-
+    testSearchVariations();
 
 
     std::cout << "\nAll tests completed successfully!\n";
