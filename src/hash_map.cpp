@@ -157,21 +157,37 @@ void searchWord(HashMap *map, const std::string &query) {
     Vector<std::string> includeWords;
     Vector<std::string> excludeWords;
 
-    // Parse the query for operators and words
+    std::string currentOperator = "AND";  // Default operator
     std::cout << "[DEBUG] Parsing query: " << query << std::endl;
+
     while (iss >> token) {
         if (token == "AND" || token == "OR") {
+            currentOperator = token;  // Update the operator
             std::cout << "[DEBUG] Found operator: " << token << std::endl;
             continue;
         } else if (token == "NOT") {
-            iss >> token;
+            iss >> token; // Get the next token for exclusion
             excludeWords.push_back(token);
             std::cout << "[DEBUG] Excluding word: " << token << std::endl;
         } else {
-            includeWords.push_back(token);
-            std::cout << "[DEBUG] Including word: " << token << std::endl;
+            // Handle the inclusion of words based on the operator
+            if (currentOperator == "AND") {
+                includeWords.push_back(token);
+                std::cout << "[DEBUG] Including word: " << token << std::endl;
+            } else if (currentOperator == "OR") {
+                // Add word to includeWords or handle accordingly if using OR
+                includeWords.push_back(token);
+                std::cout << "[DEBUG] Including word for OR: " << token << std::endl;
+            }
         }
     }
+
+    // Debug output for include words
+    std::cout << "[DEBUG] Include words: ";
+    for (const std::string &word : includeWords) {
+        std::cout << word << " ";
+    }
+    std::cout << std::endl;
 
     // Vector to store results
     Vector<WordEntry> results;
@@ -251,7 +267,7 @@ void searchWord(HashMap *map, const std::string &query) {
                         }
                         index = (index + 1) % map->capacity;
                         if (index == startIndex) {
-                            break; // We've looped back to the start
+                            break;
                         }
                     }
                 }
@@ -259,46 +275,43 @@ void searchWord(HashMap *map, const std::string &query) {
         }
     }
 
-    // Handle OR logic: if no AND words, use OR logic
-    if (includeWords.empty() && !excludeWords.empty()) {
-        std::cout << "No included words to search for!" << std::endl;
+    // Handle OR logic
+    if (includeWords.empty() && excludeWords.empty()) {
+        std::cout << "No included or excluded words to search for!" << std::endl;
         return;
     }
 
-    // Handle OR logic for include words (if no AND search was executed)
-    if (!results.empty()) {
-        std::set<int> docIDs; // To ensure unique document IDs for OR logic
-        for (const std::string &word : includeWords) {
-            unsigned int index = hash(word, map->capacity);
-            unsigned int startIndex = index;
+    // Handle OR logic for include words
+    std::set<int> docIDs; // To ensure unique document IDs for OR logic
+    for (const std::string &word : includeWords) {
+        unsigned int index = hash(word, map->capacity);
+        unsigned int startIndex = index;
 
-            // Linear probing to find the word
-            while (map->table[index] != nullptr) {
-                if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
-                    for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
-                        const WordEntry &entry = map->table[index]->entries[i];
+        // Linear probing to find the word
+        while (map->table[index] != nullptr) {
+            if (map->table[index] != TOMBSTONE && map->table[index]->key == word) {
+                for (int i = 0; i < map->table[index]->entries.getSize(); ++i) {
+                    const WordEntry &entry = map->table[index]->entries[i];
 
-                        // Check if the entry is excluded
-                        bool exclude = false;
-                        for (const std::string &excludeWord : excludeWords) {
-                            if (getEntryFromHashMap(map, excludeWord, entry.docID)) {
-                                exclude = true; // Exclude this entry
-                                break;
-                            }
-                        }
-
-                        // Add entry only if it's not excluded and not already in results
-                        if (!exclude && docIDs.insert(entry.docID).second) {
-                            results.push_back(entry);
-                            std::cout << "[DEBUG] Adding result for OR: Document ID: " << entry.docID << std::endl;
+                    // Check if the entry is excluded
+                    bool exclude = false;
+                    for (const std::string &excludeWord : excludeWords) {
+                        if (getEntryFromHashMap(map, excludeWord, entry.docID)) {
+                            exclude = true; // Exclude this entry
+                            break;
                         }
                     }
-                    break; // Stop once the word is found
+
+                    if (!exclude && docIDs.insert(entry.docID).second) {
+                        results.push_back(entry);
+                        std::cout << "[DEBUG] Adding result for OR: Document ID: " << entry.docID << std::endl;
+                    }
                 }
-                index = (index + 1) % map->capacity;
-                if (index == startIndex) {
-                    break; // We've looped back to the start
-                }
+                break;
+            }
+            index = (index + 1) % map->capacity;
+            if (index == startIndex) {
+                break; 
             }
         }
     }
@@ -333,7 +346,7 @@ void searchWord(HashMap *map, const std::string &query) {
                           << ", TF: " << entry.tf << std::endl;
             }
         }
-        count += 10; // Increment the count by 10
+        count += 10;
 
         // Check if there are more results to show
         if (count < totalResults) {
@@ -342,10 +355,10 @@ void searchWord(HashMap *map, const std::string &query) {
                 std::cout << "Type 'yes' to view the next results or 'no' to exit...\n";
                 std::getline(std::cin, response);
 
-                // If the user types 'no', exit the loop
+   
                 if (response == "no") {
                     std::cout << "Exiting result display." << std::endl;
-                    return; // Exit the searchWord function
+                    return; 
                 } else if (response == "yes") {
                     break; // User typed 'yes', continue to the next results
                 } else {
@@ -355,6 +368,7 @@ void searchWord(HashMap *map, const std::string &query) {
         }
     }
 }
+
 
 // Function to delete an entry by key and docID
 bool deleteEntry(HashMap *map, const std::string &key, int docID) {
@@ -373,15 +387,15 @@ bool deleteEntry(HashMap *map, const std::string &key, int docID) {
                         delete map->table[index]; // Free the node memory
                         map->table[index] = TOMBSTONE; // Mark as deleted
                     }
-                    map->size--; // Decrement size
-                    return true; // Deletion successful
+                    map->size--; 
+                    return true; 
                 }
             }
             return false; // Entry not found for deletion
         }
         index = (index + 1) % map->capacity; // Linear probing
         if (index == startIndex) {
-            break; // Loop back to the start
+            break; 
         }
     }
 
@@ -393,7 +407,7 @@ bool deleteEntry(HashMap *map, const std::string &key, int docID) {
 void keys(HashMap *map, Vector<std::string> &keyVector) {
     for (size_t i = 0; i < map->capacity; ++i) {
         if (map->table[i] != nullptr && map->table[i] != TOMBSTONE) {
-            keyVector.push_back(map->table[i]->key); // Add the key to the vector
+            keyVector.push_back(map->table[i]->key); 
         }
     }
 }
