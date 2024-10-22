@@ -6,12 +6,15 @@
 #include "utils.h"
 #include "Serializer.h"
 #include <string>
+#include "parser.h"
+#define MAX_QUERY_LENGTH 100
 
 int main() {
     HashMap index;
     Trie autocompleteTrie;
     Serializer serializer;
 
+    // Initialize the hash map and trie
     initHashMap(&index);
     initTrie(&autocompleteTrie);
 
@@ -34,18 +37,10 @@ int main() {
         indexBooks(&index, &autocompleteTrie, "data", serializer);
     }
 
-    // Search for a word
-    char query[100];
-    printf("Enter a word to search: ");
-    scanf("%s", query);
-    searchWord(&index, query);
+    // Use the parser to handle user commands
+    parseCommand(&index, &autocompleteTrie);
 
-    // Autocomplete example
-    printf("Enter prefix for autocomplete: ");
-    scanf("%s", query);
-    autocomplete(&autocompleteTrie, query);
-
-    // Clean up
+    // Free allocated memory
     freeHashMap(&index);
     freeTrie(&autocompleteTrie);
     
