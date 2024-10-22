@@ -2,7 +2,11 @@
 #define UTILS_H
 #include <filesystem>
 #include <stdio.h>
-#include <dirent.h>
+#ifdef _WIN32
+#include "dirent.h"  // Use the custom dirent.h for Windows
+#else
+#include <dirent.h>  // Use the standard dirent.h for Linux/macOS
+#endif
 #include <string.h>
 #include "hash_map.h"
 #include "trie.h"
