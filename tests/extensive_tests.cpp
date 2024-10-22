@@ -242,7 +242,7 @@ void testTrieNoMatch() {
     }
 }
 
-// Test variations for more complex queries with different results
+
 
 // Helper function to check if word exists in the hash map
 bool wordExistsInMap(HashMap *map, const std::string &word) {
