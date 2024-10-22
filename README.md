@@ -18,8 +18,6 @@ Hashmap.cpp.h - this contains the structure for the word entries which contains 
     float idf;  // Inverse Document Frequency
     float tfidf; // TF-IDF:
 
-    This file then also contains the Hashmaps structure which I have implemented a Seperate chaining Hashmap.
-
 Trie.cpp.h - This contains all the logic for initiating, inserting and facilitating autocomplete using the trie data structure.
 
 main.cpp - Root directory which runs the parser
