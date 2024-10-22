@@ -1,2 +1,9 @@
-*.exe
+# Ignore object files
 *.o
+
+# Ignore executables
+MiniSearchEngine
+MiniSearchEngine.exe
+
+# Ignore binary files
+*.bin

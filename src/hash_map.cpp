@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include "hash_map.h"
-#include "Vector.h"  // Include your custom Vector class
+#include "Vector.h"
 #include <algorithm>
 #include <set>
 #include <sstream>
@@ -119,6 +119,7 @@ bool insert(HashMap *map, const std::string &key, const WordEntry &entry) {
     newNode->entries.push_back(entry); // Add the WordEntry
     map->table[index] = newNode; // Insert new node in the hash map
     map->size++; // Increment the size of the hash map
+    //std::cout << "Inserting: " << key << " at index: " << index << std::endl;
         // std::cout << "Inserted new Word: " << key
         //       << ", DocID: " << entry.docID
         //       << " at index: " << index << std::endl;
