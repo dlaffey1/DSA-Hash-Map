@@ -222,7 +222,7 @@ void searchWord(HashMap *map, const std::string &query) {
             }
         }
         // If the intersection is empty, print a message and return
-        if (intersectionDocIDs.empty()) {
+        if (intersectionDocIDs.empty() && currentOperator == "AND") {
             std::cout << "No documents contain all the words: ";
             for (const auto &word : includeWords) {
                 std::cout << "'" << word << "' ";
@@ -230,6 +230,7 @@ void searchWord(HashMap *map, const std::string &query) {
             std::cout << std::endl;
             return;  // Exit the function as no results were found
         }
+
         std::cout << "[DEBUG] Intersection document IDs for AND: ";
         for (const int docID : intersectionDocIDs) {
             std::cout << docID << " ";
