@@ -9,7 +9,9 @@
     ```bash
     make
     ```
-3. Finally, execute the program:
+3. Before running the program, ensure that you have placed text files into the "data" folder.
+
+4. Finally, execute the program:
     ```bash
     ./MiniSearchEngine
     ```
@@ -87,7 +89,7 @@ DSA-Hash-Map/
 │   ├── Vector.h
 │   └── Vector.h
 │
-├── data/                    # For storing serialized hashmap and trie
+├── index/                    # For storing serialized hashmap and trie
 |   └──
 |
 ├── src/                     # Source files
