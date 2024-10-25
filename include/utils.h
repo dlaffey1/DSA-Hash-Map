@@ -3,10 +3,6 @@
 
 #include <filesystem>
 #include <stdio.h>
-#ifdef _WIN32
-#include "dirent.h"  // Use the custom dirent.h for Windows
-
-#endif
 #include <string.h>
 #include "hash_map.h"
 #include "trie.h"
